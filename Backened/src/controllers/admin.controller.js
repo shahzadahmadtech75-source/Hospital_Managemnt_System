@@ -1,5 +1,7 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
+import cloudinary from '../config/cloudinary.js';
+import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 
 /*
@@ -468,6 +470,10 @@ const existingUser = await User.findOne({
         data: null,
       });
     }
+    // Upload profile image to Cloudinary if provided
+const profileImageUrl = req.file
+  ? await uploadToCloudinary(req.file.buffer)
+  : null;
 
     // Create new staff user
     const user = await User.create({
@@ -477,7 +483,7 @@ const existingUser = await User.findOne({
   role: role,
   isActive: true,
   isEmailVerified: false,
-  profileImage: profileImage || null, // ADD: profileImage (optional)
+  profileImage: profileImageUrl || null, // ADD: profileImage (optional)
 });
 
     // Prepare safe user data for response
@@ -486,6 +492,7 @@ const existingUser = await User.findOne({
       username:user.username,
       email: user.email,
       role: user.role,
+      profileImage: user.profileImage,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,

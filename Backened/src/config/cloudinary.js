@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import 'dotenv/config'; // 👈 Add this line at the absolute top
 
 // Configure Cloudinary with environment variables
 cloudinary.config({
@@ -6,5 +7,7 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
 console.log('✅ Cloudinary configured with cloud name:', cloudinary.config().cloud_name);
+
 export default cloudinary;

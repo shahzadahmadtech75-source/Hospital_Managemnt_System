@@ -8,6 +8,7 @@ import { createAdmin ,
   activateUser,
   deactivateUser
  } from '../controllers/admin.controller.js';
+import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -54,6 +55,8 @@ router.post(
   '/users',
   authenticate,
   authorize('admin'),
+  uploadProfileImage,
+  handleUploadError,
   createStaffAccount
 );
 

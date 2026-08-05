@@ -1,6 +1,9 @@
 import User from '../models/user.model.js';
 import { generateAccessToken , generateRefreshToken } from '../utils/generateTokens.js';
 import jwt from 'jsonwebtoken';
+// ADD AT THE TOP OF THE FILE WITH OTHER IMPORTS:
+import cloudinary from '../config/cloudinary.js';
+import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 
 
@@ -8,21 +11,21 @@ import jwt from 'jsonwebtoken';
  * Register a new patient
  * POST /api/v1/auth/register
  */
-export const register = 
-   async (req, res) => {
-  try {
-    const { email, password, username, profileImage } = req.body;
 
-    // Validate required fields
-    if (!email || !password) {
+export const register = async (req, res) => {
+  try {
+    const { email, password, username } = req.body;
+
+    // 1. Initial Presence Validations
+    if (!email || !password || !username) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: 'Email, password, and username are required',
         data: null,
       });
     }
 
-    // Validate email format
+    // 2. Email Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -32,16 +35,9 @@ export const register =
       });
     }
 
-        // ADD: Username validation
-    if (!username) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username is required',
-        data: null,
-      });
-    }
-
-    if (username.length < 3 || username.length > 30) {
+    // 3. Username Validation & Sanitization
+    const cleanUsername = username.trim();
+    if (cleanUsername.length < 3 || cleanUsername.length > 30) {
       return res.status(400).json({
         success: false,
         message: 'Username must be between 3 and 30 characters',
@@ -49,15 +45,15 @@ export const register =
       });
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
       return res.status(400).json({
         success: false,
-        message: 'Username can only contain letters, numbers, and underscores',
+        message: 'Username can only contain letters, numbers, underscores, and spaces',
         data: null,
       });
     }
 
-    // Validate password length (consistent with User model)
+    // 4. Password Validation
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -66,59 +62,75 @@ export const register =
       });
     }
 
-    // Check if user already exists
-    // ADD: Check if email or username already exists
-const existingUser = await User.findOne({ 
-  $or: [
-    { email: email.toLowerCase() },
-    { username: username.toLowerCase() }
-  ]
-});
+    // 5. Database Duplicate Check
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ 
+      $or: [
+        { email: normalizedEmail },
+        { username: { $regex: new RegExp(`^${cleanUsername}$`, 'i') } } // Case-insensitive matching
+      ]
+    });
+
     if (existingUser) {
+      const isEmailMatch = existingUser.email === normalizedEmail;
       return res.status(409).json({
         success: false,
-        message: 'An account with this email already exists',
+        message: isEmailMatch 
+          ? 'An account with this email already exists' 
+          : 'This username is already taken',
         data: null,
       });
     }
 
-    // Create new patient user (role is always 'patient')
-    const user = await User.create({
-  email: email.toLowerCase(),
-  username: username.toLowerCase(), // ADD: username
-  password,
-  role: 'patient',
-  profileImage: profileImage || null, // ADD: profileImage (optional)
-});
+    // 6. Optional Cloudinary Profile Image Upload
+    
+const profileImageUrl = req.file
+  ? await uploadToCloudinary(req.file.buffer)
+  : null;
 
-    // Remove sensitive fields from response
-    const userResponse = {
-      id: user._id,
-      username:user.username,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      isEmailVerified: user.isEmailVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    // 7. Save Document to Database
+    const user = new User({
+      email: normalizedEmail,
+      username: cleanUsername,
+      password, // Automatically hashed by your pre-save middleware
+      role: 'patient',
+      profileImage: profileImageUrl
+    });
 
+    await user.save();
+
+    // 8. Generate Authentication Token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // 9. Send Final Response
     return res.status(201).json({
       success: true,
-      message: 'Patient registration successful',
-      data: userResponse,
+      message: 'Patient registered successfully',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        profileImage: profileImageUrl
+      }
     });
+
   } catch (error) {
-    // Handle duplicate key error (fallback in case our check missed it)
+    // Fallback duplicate key check
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: 'An account with this email already exists',
+        message: 'An account with this email or username already exists',
         data: null,
       });
     }
 
-    // Handle Mongoose validation errors
+    // Mongoose Model Constraints Validation
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
@@ -128,15 +140,15 @@ const existingUser = await User.findOne({
       });
     }
 
-    // Handle other errors
-    console.error('Registration error:', error);
+    console.error('Registration critical error:', error);
     return res.status(500).json({
       success: false,
       message: 'An internal server error occurred',
       data: null,
     });
   }
-}
+};
+
 
 // Login controller
 export const login = async (req, res) => {

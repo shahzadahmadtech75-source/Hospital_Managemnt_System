@@ -1,10 +1,10 @@
 import express from 'express';
 import { register, login, getUsers , refreshAccessToken ,logout } from '../controllers/auth.controller.js';
-
+import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 const router = express.Router();
 
 // Public routes
-router.post('/register', register);
+router.post('/register',uploadProfileImage,handleUploadError, register);
 router.post('/login', login);
 router.post('/refresh', refreshAccessToken);
 router.post('/logout', logout);
