@@ -7,7 +7,9 @@ import patientRoutes from './routes/patient.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import staffRoutes from './routes/staff.routes.js';
 import receptionistRoutes from './routes/receptionist.routes.js';
-
+import patientProfileRoutes from './routes/patientProfile.routes.js';
+import appointmentRoutes from './routes/appointment.routes.js';
+import doctorProfileRoutes from './routes/doctorProfile.routes.js';
 
 const app = express();
 
@@ -37,7 +39,9 @@ app.use('/api/v1/patients', patientRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/receptionist', receptionistRoutes);
-
+app.use('/api/v1/patient', patientProfileRoutes);
+app.use('/api/v1/patient', appointmentRoutes);
+app.use('/api/v1/doctor', doctorProfileRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
