@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 // ADD AT THE TOP OF THE FILE WITH OTHER IMPORTS:
 import cloudinary from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
+import PatientProfile from '../models/patientProfile.model.js';
 
 
 
@@ -14,7 +15,7 @@ import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 export const register = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username ,fullName} = req.body;
 
     // 1. Initial Presence Validations
     if (!email || !password || !username) {
@@ -98,6 +99,9 @@ const profileImageUrl = req.file
     });
 
     await user.save();
+
+     
+     
 
     // 8. Generate Authentication Token
     const token = jwt.sign(

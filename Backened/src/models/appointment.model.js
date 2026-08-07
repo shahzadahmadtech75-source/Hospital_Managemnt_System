@@ -48,8 +48,6 @@ const appointmentSchema = new mongoose.Schema(
     },
 
     
-
-
 createdBy: {
   type: String,
   enum: ['patient', 'receptionist', 'doctor', 'admin'],
@@ -75,12 +73,33 @@ createdByUser: {
       default: 'pending'
     },
 
+
     // Additional notes - captures medical notes, special requests, or follow-up details
     notes: {
       type: String,
       trim: true,
       maxlength: [1000, 'Notes cannot exceed 1000 characters']
-    }
+    },
+    caseHistory: {
+  type: String,
+  trim: true,
+  maxlength: [2000, 'Case history cannot exceed 2000 characters']
+},
+medications: {
+  type: String,
+  trim: true,
+  maxlength: [1000, 'Medications cannot exceed 1000 characters']
+},
+
+consultationNotes: {
+  type: String,
+  trim: true,
+  maxlength: [1000, 'Consultation notes cannot exceed 1000 characters']
+},
+consultationDate: {
+  type: Date,
+  default: null
+}
   },
   {
     timestamps: true // Automatically adds createdAt and updatedAt

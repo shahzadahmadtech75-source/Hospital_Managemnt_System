@@ -3,6 +3,7 @@ import PatientProfile from '../models/patientProfile.model.js';
 import DoctorProfile from '../models/doctorProfile.model.js';
 import User from '../models/user.model.js';
 
+
 /**
  * Create appointment (Receptionist)
  * POST /api/v1/receptionist/appointments
@@ -664,23 +665,152 @@ export const updateAppointmentStatus = async (req, res) => {
 export const searchPatients = async (req, res) => {
   try {
     const { query, phone, email } = req.query;
+    
+    let patientResults = [];
+    
+    // 1. Search in PatientProfile first (for complete profiles)
+    let profileCriteria = {};
+    if (query) {
+      profileCriteria.fullName = { $regex: query, $options: 'i' };
+    }
+    if (phone) {
+      profileCriteria.phone = { $regex: phone, $options: 'i' };
+    }
+    
+    const profiles = await PatientProfile.find(profileCriteria)
+      .populate('user', 'username email isActive');
+    
+    patientResults = profiles.map(p => ({
+      _id: p._id,
+      fullName: p.fullName || 'Unknown',
+      phone: p.phone || '',
+      email: p.user?.email || null,
+      username: p.user?.username || null,
+      isActive: p.user?.isActive || false,
+      isProfileCompleted: p.isProfileCompleted || false,
+      hasProfile: true,
+      userId: p.user?._id
+    }));
+    
+    // 2. Search in User collection for patients without profiles
+    if (query || email) {
+      let userCriteria = { role: 'patient' };
+      
+      if (query) {
+        // Search by username or email
+        userCriteria.$or = [
+          { username: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } }
+        ];
+      }
+      
+      if (email) {
+        userCriteria.email = { $regex: email, $options: 'i' };
+      }
+      
+      const users = await User.find(userCriteria).select('username email isActive');
+      
+      // Check which users don't have PatientProfile yet
+      const existingUserIds = patientResults.map(p => p.userId?.toString());
+      
+      for (const user of users) {
+        const userIdStr = user._id.toString();
+        
+        // Check if user already has a profile
+        const hasProfile = patientResults.some(p => p.userId?.toString() === userIdStr);
+        
+        if (!hasProfile) {
+          // Check if this user actually has a PatientProfile
+          const profile = await PatientProfile.findOne({ user: user._id });
+          
+          if (!profile) {
+            patientResults.push({
+              _id: null, // No PatientProfile yet
+              fullName: 'Unknown (Incomplete Profile)',
+              phone: '',
+              email: user.email,
+              username: user.username,
+              isActive: user.isActive,
+              isProfileCompleted: false,
+              hasProfile: false,
+              userId: user._id,
+              needsProfileCreation: true
+            });
+          }
+        }
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: patientResults,
+      count: patientResults.length
+    });
+    
+  } catch (error) {
+    console.error('Search patients error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search patients',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * Search doctors (Receptionist)
+ * GET /api/v1/receptionist/doctors/search
+ */
+export const searchDoctors = async (req, res) => {
+  try {
+    const { 
+      query,      // Search by name, department, or specialization
+      department,
+      specialization,
+      phone,
+      email,
+      isAvailable // Filter by availability (true/false)
+    } = req.query;
 
     // Build search criteria
     let searchCriteria = {};
 
+    // Search by name
     if (query) {
-      // Search by fullName (case-insensitive)
-      searchCriteria.fullName = { $regex: query, $options: 'i' };
+      searchCriteria.$or = [
+        { fullName: { $regex: query, $options: 'i' } },
+        { department: { $regex: query, $options: 'i' } },
+        { specialization: { $regex: query, $options: 'i' } }
+      ];
     }
 
+    // Filter by department
+    if (department) {
+      searchCriteria.department = { $regex: department, $options: 'i' };
+    }
+
+    // Filter by specialization
+    if (specialization) {
+      searchCriteria.specialization = { $regex: specialization, $options: 'i' };
+    }
+
+    // Filter by phone
     if (phone) {
       searchCriteria.phone = { $regex: phone, $options: 'i' };
     }
 
+    // Filter by availability
+    if (isAvailable !== undefined) {
+      searchCriteria.isAvailable = isAvailable === 'true';
+    }
+
+    // If email is provided, search in User model
+    let userFilter = {};
     if (email) {
-      // First find users with matching email
       const users = await User.find({ 
-        email: { $regex: email, $options: 'i' } 
+        email: { $regex: email, $options: 'i' },
+        role: 'doctor'
       });
       
       if (users.length > 0) {
@@ -690,50 +820,58 @@ export const searchPatients = async (req, res) => {
         return res.status(200).json({
           success: true,
           data: [],
-          count: 0
+          count: 0,
+          message: 'No doctors found with this email'
         });
       }
     }
 
-    // If no search criteria provided, return empty or all patients
+    // If no search criteria provided
     if (Object.keys(searchCriteria).length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'At least one search parameter (query, phone, or email) is required'
+        message: 'At least one search parameter is required'
       });
     }
 
-    // Search patients and populate user data
-    const patients = await PatientProfile.find(searchCriteria)
-      .populate('user', 'username email isActive')
-      .select('fullName phone address gender dateOfBirth bloodGroup isProfileCompleted');
+    // Search doctors and populate user data
+    const doctors = await DoctorProfile.find(searchCriteria)
+      .populate('user', 'username email isActive profileImage')
+      .select('fullName department specialization qualification experienceYears phone address consultationFee description availability isAvailable');
 
     // Format response
-    const formattedPatients = patients.map(patient => ({
-      _id: patient._id,
-      fullName: patient.fullName,
-      phone: patient.phone,
-      email: patient.user?.email || null,
-      username: patient.user?.username || null,
-      isActive: patient.user?.isActive || false,
-      isProfileCompleted: patient.isProfileCompleted,
-      address: patient.address,
-      gender: patient.gender,
-      dateOfBirth: patient.dateOfBirth,
-      bloodGroup: patient.bloodGroup
+    const formattedDoctors = doctors.map(doctor => ({
+      _id: doctor._id,
+      userId: doctor.user?._id,
+      fullName: doctor.fullName,
+      department: doctor.department,
+      specialization: doctor.specialization,
+      qualification: doctor.qualification,
+      experienceYears: doctor.experienceYears,
+      phone: doctor.phone,
+      address: doctor.address,
+      consultationFee: doctor.consultationFee,
+      description: doctor.description,
+      availability: doctor.availability,
+      isAvailable: doctor.isAvailable,
+      email: doctor.user?.email || null,
+      username: doctor.user?.username || null,
+      profileImage: doctor.user?.profileImage || null,
+      isActive: doctor.user?.isActive || false
     }));
 
     res.status(200).json({
       success: true,
-      data: formattedPatients,
-      count: formattedPatients.length
+      data: formattedDoctors,
+      count: formattedDoctors.length,
+      message: formattedDoctors.length > 0 ? 'Doctors found' : 'No doctors found'
     });
 
   } catch (error) {
-    console.error('Search patients error:', error);
+    console.error('Search doctors error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to search patients',
+      message: 'Failed to search doctors',
       error: error.message
     });
   }

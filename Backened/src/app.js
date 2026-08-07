@@ -3,7 +3,6 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
 import protectedRoutes from './routes/protected.routes.js';
-import patientRoutes from './routes/patient.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import staffRoutes from './routes/staff.routes.js';
 import receptionistRoutes from './routes/receptionist.routes.js';
@@ -35,7 +34,7 @@ app.use('/api/v1/auth', authRoutes);
 //Protected routes
 app.use('/api/v1/protected', protectedRoutes);
 
-app.use('/api/v1/patients', patientRoutes);
+
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/receptionist', receptionistRoutes);

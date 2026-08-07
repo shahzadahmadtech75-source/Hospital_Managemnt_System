@@ -4,7 +4,10 @@ import express from 'express';
 import {
   getDoctorProfile,
   updateDoctorProfile,
-  updateDoctorAvailability
+  updateDoctorAvailability,
+  getDoctorAppointments,
+  completeAppointment,
+  createPrescription
 } from '../controllers/doctorProfile.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -35,4 +38,24 @@ router.patch(
   updateDoctorAvailability
 );
 
+// get all apointmetns
+router.get(
+  '/appointments',
+  authenticate,      // ← This must be first
+  authorize('doctor'), // ← This runs second
+  getDoctorAppointments  // ← This runs last
+);
+
+
+//Complete appointment
+router.patch('/appointments/:id/complete',
+  authenticate, 
+  authorize('doctor'), 
+   completeAppointment);
+
+// Create presciption
+   router.post('/prescriptions',
+    authenticate, 
+  authorize('doctor'), 
+     createPrescription);
 export default router;

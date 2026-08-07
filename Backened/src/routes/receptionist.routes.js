@@ -8,7 +8,8 @@ import {
   updateAppointment,
   cancelAppointment,
   updateAppointmentStatus,
-  searchPatients
+  searchPatients,
+  searchDoctors
 } from '../controllers/receptionist.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -27,6 +28,9 @@ router.get('/appointments', getAllAppointments);
 
 // Search patients
 router.get('/patients/search', searchPatients);
+
+// seach doctor
+router.get('/doctors/search', searchDoctors);
 
 // Get appointment by ID
 router.get('/appointments/:id', getAppointmentById);

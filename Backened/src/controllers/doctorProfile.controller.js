@@ -2,6 +2,8 @@
 
 import DoctorProfile from '../models/doctorProfile.model.js';
 import User from '../models/user.model.js';
+import Appointment from '../models/appointment.model.js';
+import Prescription from '../models/prescription.model.js';
 
 /**
  * Get authenticated doctor's profile
@@ -221,6 +223,320 @@ export const updateDoctorAvailability = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update availability',
+      error: error.message
+    });
+  }
+};
+
+
+
+/**
+ * Get doctor's appointments
+ * GET /api/v1/doctor/appointments
+*/
+export const getDoctorAppointments = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { status } = req.query;
+    
+    console.log('User ID from token:', userId); // Debug log
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Find doctor profile
+    const doctorProfile = await DoctorProfile.findOne({ user: userId });
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found. Please complete your profile first.'
+      });
+    }
+
+    // Build filter
+    const filter = { doctor: doctorProfile._id };
+    
+    // Optional status filtering
+    if (status) {
+      const allowedStatuses = ['pending', 'approved', 'rejected', 'completed', 'cancelled'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status. Allowed statuses: pending, approved, rejected, completed, cancelled'
+        });
+      }
+      filter.status = status;
+    }
+
+    // Get appointments
+    const appointments = await Appointment.find(filter)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName department specialization')
+      .sort({ appointmentDate: 1, appointmentTime: 1 }); // Ascending by date and time
+
+    res.status(200).json({
+      success: true,
+      count: appointments.length,
+      data: appointments
+    });
+
+  } catch (error) {
+    console.error('Get doctor appointments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve appointments',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Complete appointment (Doctor)
+ * PATCH /api/v1/doctor/appointments/:id/complete
+ */
+export const completeAppointment = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { id } = req.params;
+    const { 
+      caseHistory, 
+      consultationNotes,
+      medications 
+    } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Find doctor profile
+    const doctorProfile = await DoctorProfile.findOne({ user: userId });
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found. Please complete your profile first.'
+      });
+    }
+
+    // Find appointment and verify it belongs to this doctor
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    // Verify appointment belongs to this doctor
+    if (appointment.doctor.toString() !== doctorProfile._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to complete this appointment'
+      });
+    }
+
+    // Check if appointment can be completed
+    if (appointment.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Appointment is already completed'
+      });
+    }
+
+    if (appointment.status !== 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot complete an appointment with status "${appointment.status}". Only approved appointments can be completed.`
+      });
+    }
+
+    // Update appointment with consultation details
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          status: 'completed',
+          caseHistory: caseHistory || '',
+          consultationNotes: consultationNotes || '',
+          medications: medications || '',
+          consultationDate: new Date()
+        }
+      },
+      { new: true, runValidators: true }
+    )
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName department specialization');
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment completed successfully',
+      data: updatedAppointment
+    });
+
+  } catch (error) {
+    console.error('Complete appointment error:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid appointment ID format'
+      });
+    }
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to complete appointment',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * Create prescription (Doctor)
+ * POST /api/v1/doctor/prescriptions
+ */
+export const createPrescription = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { 
+      appointmentId, 
+      caseHistory, 
+      medications, 
+      extraNotes 
+    } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Validate required fields
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointmentId is required'
+      });
+    }
+
+    if (!medications || !Array.isArray(medications) || medications.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'medications must be a non-empty array'
+      });
+    }
+
+    // Find doctor profile
+    const doctorProfile = await DoctorProfile.findOne({ user: userId });
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found. Please complete your profile first.'
+      });
+    }
+
+    // Find appointment and verify it belongs to this doctor
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    // Verify appointment belongs to this doctor
+    if (appointment.doctor.toString() !== doctorProfile._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to create a prescription for this appointment'
+      });
+    }
+
+    // Check if appointment is completed
+    if (appointment.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot create prescription for appointment with status "${appointment.status}". Only completed appointments can have prescriptions.`
+      });
+    }
+
+    // Check if prescription already exists for this appointment
+    const existingPrescription = await Prescription.findOne({ appointment: appointmentId });
+    if (existingPrescription) {
+      return res.status(409).json({
+        success: false,
+        message: 'A prescription already exists for this appointment. Please update the existing prescription instead.',
+        data: {
+          prescriptionId: existingPrescription._id,
+          createdAt: existingPrescription.createdAt
+        }
+      });
+    }
+
+    // Create prescription
+    const prescription = new Prescription({
+      patient: appointment.patient,
+      doctor: doctorProfile._id,
+      appointment: appointmentId,
+      caseHistory: caseHistory || '',
+      medications: medications,
+      extraNotes: extraNotes || '',
+      prescriptionDate: new Date()
+    });
+
+    await prescription.save();
+
+    // Populate the response
+    const populatedPrescription = await Prescription.findById(prescription._id)
+      .populate('patient', 'fullName phone bloodGroup')
+      .populate('doctor', 'fullName department specialization')
+      .populate('appointment', 'appointmentDate appointmentTime status');
+
+    res.status(201).json({
+      success: true,
+      message: 'Prescription created successfully',
+      data: populatedPrescription
+    });
+
+  } catch (error) {
+    console.error('Create prescription error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid appointment ID format'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create prescription',
       error: error.message
     });
   }
