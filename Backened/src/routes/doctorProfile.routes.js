@@ -12,10 +12,21 @@ import {
   updateAppointmentStatusByDoctor,
   getDoctorPrescriptions,
   updatePrescription,
-  deletePrescription
+  deletePrescription,
+  getMyPatients,
+  createAdmission,
+  getAdmissions,
+  updateAdmission,
+  deleteAdmission,
+  createReport,
+  getReports,
+  updateReport,
+  deleteReport,
+  changePassword
 } from '../controllers/doctorProfile.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
+import { handleUploadError , uploadPdf } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -93,4 +104,81 @@ router.delete('/prescriptions/:id',
   authenticate,
   authorize('doctor'),
    deletePrescription);
+
+//get all patients
+   router.get(
+  '/patients',
+  authenticate,
+  authorize('doctor'),
+  getMyPatients
+);
+
+router.post(
+  '/admissions',
+  authenticate,
+  authorize('doctor'),
+  createAdmission
+);
+
+router.get(
+  '/admissions',
+  authenticate,
+  authorize('doctor'),
+  getAdmissions
+);
+
+router.patch(
+  '/admissions/:id',
+  authenticate,
+  authorize('doctor'),
+  updateAdmission
+);
+
+router.delete(
+  '/admissions/:id',
+  authenticate,
+  authorize('doctor'),
+  deleteAdmission
+);
+
+// Report routes
+router.post(
+  '/reports',
+  authenticate,
+  authorize('doctor'),
+  uploadPdf,
+  handleUploadError,
+  createReport
+);
+
+router.get(
+  '/reports',
+  authenticate,
+  authorize('doctor'),
+  getReports
+);
+
+router.patch(
+  '/reports/:id',
+  authenticate,
+  authorize('doctor'),
+  uploadPdf,
+  handleUploadError,
+  updateReport
+);
+
+router.delete(
+  '/reports/:id',
+  authenticate,
+  authorize('doctor'),
+  deleteReport
+);
+
+// Change password route
+router.patch(
+  '/change-password',
+  authenticate,
+  authorize('doctor'),
+  changePassword
+);
 export default router;

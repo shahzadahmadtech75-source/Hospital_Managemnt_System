@@ -134,7 +134,7 @@ admissionSchema.pre('save', async function(next) {
       return next(error);
     }
   }
-  next();
+  next;
 });
 
 const Admission = mongoose.model('Admission', admissionSchema);

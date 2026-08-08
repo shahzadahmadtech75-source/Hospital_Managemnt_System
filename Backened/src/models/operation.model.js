@@ -144,7 +144,7 @@ operationSchema.pre('save', function(next) {
       return next(error);
     }
   }
-  next();
+  next;
 });
 
 const Operation = mongoose.model('Operation', operationSchema);
