@@ -5,7 +5,8 @@ import { updatePatientProfile , getPatientProfile } from '../controllers/patient
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
 import { getPatientAppointments } from '../controllers/appointment.controller.js';
-import { getPatientPrescriptionById, getPatientInvoices, getPatientOperations, getDoctorProfileById, getPatientPrescriptions ,getPatientDoctors ,getPatientAdmissions } from '../controllers/patientProfile.controller.js';
+import { getPatientPrescriptionById,changePassword, getPatientInvoices, getPatientOperations, getDoctorProfileById, getPatientPrescriptions ,getPatientDoctors ,getPatientAdmissions } from '../controllers/patientProfile.controller.js';
+import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.patch(
   '/profile',
   authenticate,
   authorize('patient'),
+  uploadProfileImage,handleUploadError,
   updatePatientProfile
 );
 
@@ -72,4 +74,10 @@ router.get('/invoices',
             authenticate,
   authorize('patient'), 
   getPatientInvoices);
+
+  // PATCH /api/v1/patient/change-password 
+router.patch('/change-password',
+  authenticate,
+  authorize('patient'),
+   changePassword);
 export default router;

@@ -8,6 +8,7 @@ import Appointment from '../models/appointment.model.js';
 import Admission from '../models/admission.models.js';
 import Operation from '../models/operation.model.js';
 import Invoice from '../models/invoice.model.js';
+import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 /**
  * Get authenticated user's patient profile
@@ -64,9 +65,8 @@ export const getPatientProfile = async (req, res) => {
   }
 };
 
-/**
- * Update patient profile
- * PATCH /api/v1/patient/profile
+/* 
+ * Allows patient to update their profile including profile image
  */
 export const updatePatientProfile = async (req, res) => {
   try {
@@ -94,18 +94,51 @@ export const updatePatientProfile = async (req, res) => {
       }
     });
     
-    // Check if at least one field is provided
-    if (Object.keys(updateData).length === 0) {
+    // ============================================
+    // Handle Profile Image Upload
+    // ============================================
+    let profileImageUrl = null;
+    
+    if (req.file) {
+      try {
+        // Upload image to Cloudinary
+        profileImageUrl = await uploadToCloudinary(req.file.buffer);
+        console.log('Profile image uploaded to Cloudinary:', profileImageUrl);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload profile image',
+          error: uploadError.message
+        });
+      }
+    }
+    
+    // Check if at least one field is provided or image is uploaded
+    if (Object.keys(updateData).length === 0 && !profileImageUrl) {
       return res.status(400).json({
         success: false,
-        message: 'At least one field must be provided for update'
+        message: 'At least one field or profile image must be provided for update'
       });
     }
     
     // Set profile as completed
     updateData.isProfileCompleted = true;
     
-    // Find and update, or create if doesn't exist
+    // ============================================
+    // Update User Model (for profile image)
+    // ============================================
+    if (profileImageUrl) {
+      await User.findByIdAndUpdate(
+        userId,
+        { $set: { profileImage: profileImageUrl } },
+        { new: true }
+      );
+    }
+    
+    // ============================================
+    // Update PatientProfile
+    // ============================================
     const profile = await PatientProfile.findOneAndUpdate(
       { user: userId },
       { $set: updateData },
@@ -116,10 +149,14 @@ export const updatePatientProfile = async (req, res) => {
       }
     );
     
-    // Get user data for response
+    // ============================================
+    // Get Updated User Data
+    // ============================================
     const user = await User.findById(userId).select('username email profileImage');
     
-    // Combine for response
+    // ============================================
+    // Combine for Response
+    // ============================================
     const profileData = profile.toObject();
     profileData.user = user ? {
       _id: user._id,
@@ -128,10 +165,26 @@ export const updatePatientProfile = async (req, res) => {
       profileImage: user.profileImage
     } : null;
     
+    // Calculate age from dateOfBirth if available
+    let age = null;
+    if (profile.dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(profile.dateOfBirth);
+      age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: profileData
+      data: {
+        ...profileData,
+        age: age,
+        imageUpdated: !!profileImageUrl
+      }
     });
     
   } catch (error) {
@@ -671,6 +724,150 @@ export const getPatientInvoices = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve invoices',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Change patient password
+ * PATCH /api/v1/patient/change-password
+ */
+// src/controllers/patientProfile.controller.js
+
+/**
+ * Change patient password
+ * PATCH /api/v1/patient/change-password
+ */
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Validate required fields
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirm password is required'
+      });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match'
+      });
+    }
+
+    // Check if new password is same as current password
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // Find user with password field included
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Debug: Log password validation
+    console.log('New password being validated:', newPassword);
+
+    // Try to update password
+    try {
+      user.password = newPassword;
+      
+      // Update passwordChangedAt if the model has this field
+      if (user.schema.path('passwordChangedAt')) {
+        user.passwordChangedAt = new Date();
+      }
+
+      await user.save();
+    } catch (validationError) {
+      // If validation fails, return the specific error
+      if (validationError.name === 'ValidationError') {
+        const errors = Object.values(validationError.errors).map(err => err.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Password validation failed',
+          errors: errors,
+          // Include the password requirements for the user
+          requirements: {
+            minLength: 8,
+            uppercase: 'At least one uppercase letter (A-Z)',
+            lowercase: 'At least one lowercase letter (a-z)',
+            number: 'At least one number (0-9)',
+            specialChar: 'At least one special character (@$!%*?&)'
+          }
+        });
+      }
+      throw validationError;
+    }
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please login again with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
       error: error.message
     });
   }

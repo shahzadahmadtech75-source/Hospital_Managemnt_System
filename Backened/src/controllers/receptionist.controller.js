@@ -2,35 +2,149 @@ import Appointment from '../models/appointment.model.js';
 import PatientProfile from '../models/patientProfile.model.js';
 import DoctorProfile from '../models/doctorProfile.model.js';
 import User from '../models/user.model.js';
+import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
+/**
+ * Create patient (Receptionist)
+ * Used for walk-in patients or new patient registration by receptionist
+ */
+export const createPatientByReceptionist = async (req, res) => {
+  try {
+    const {
+      email,
+      username,
+      password,
+      fullName,
+      phone,
+      address,
+      gender,
+      dateOfBirth,
+      bloodGroup
+    } = req.body;
+
+    // ============================================
+    // Validate Required Fields
+    // ============================================
+    if (!email || !username || !password || !fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, username, password, and fullName are required'
+      });
+    }
+
+    // ============================================
+    // Check for Existing User
+    // ============================================
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists with this email or username'
+      });
+    }
+
+    // ============================================
+    // Create User
+    // ============================================
+    const user = new User({
+      email,
+      username,
+      password, // Will be hashed by pre-save hook
+      role: 'patient',
+      isActive: true,
+      isEmailVerified: true // Receptionist verified in person
+    });
+
+    await user.save();
+
+    // ============================================
+    // Create PatientProfile
+    // ============================================
+    const patientProfile = new PatientProfile({
+      user: user._id,
+      fullName,
+      phone: phone || '',
+      address: address || '',
+      gender: gender || '',
+      dateOfBirth: dateOfBirth || null,
+      bloodGroup: bloodGroup || '',
+      isProfileCompleted: true // Receptionist filled the data
+    });
+
+    await patientProfile.save();
+
+    // ============================================
+    // Populate Response
+    // ============================================
+    const populatedPatient = await PatientProfile.findById(patientProfile._id)
+      .populate('user', 'username email isActive');
+
+    res.status(201).json({
+      success: true,
+      message: 'Patient created successfully',
+      data: {
+        _id: populatedPatient._id,
+        userId: populatedPatient.user._id,
+        fullName: populatedPatient.fullName,
+        phone: populatedPatient.phone,
+        address: populatedPatient.address,
+        gender: populatedPatient.gender,
+        dateOfBirth: populatedPatient.dateOfBirth,
+        bloodGroup: populatedPatient.bloodGroup,
+        isProfileCompleted: populatedPatient.isProfileCompleted,
+        user: {
+          email: populatedPatient.user.email,
+          username: populatedPatient.user.username,
+          isActive: populatedPatient.user.isActive
+        },
+        credentials: {
+          email: email,
+          username: username,
+          message: 'Patient account created successfully. Please provide credentials to the patient.'
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Create patient (receptionist) error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Duplicate entry detected. Please check email or username.'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create patient',
+      error: error.message
+    });
+  }
+};
 
 /**
  * Create appointment (Receptionist)
- * POST /api/v1/receptionist/appointments
- * 
- * Supports:
- * 1. Existing patient (by patientId)
- * 2. New patient (walk-in) - creates user + patient profile
+ * Used for booking appointments for existing patients only
+ * Patients must be created first using createPatientByReceptionist
  */
 export const createAppointmentByReceptionist = async (req, res) => {
   try {
     const receptionistId = req.user.id;
     const {
-      // Patient info (for existing OR new patient)
-      patientId,           // Optional - if provided, use existing patient
-      
-      // New patient fields (if patient doesn't exist)
-      patientEmail,        // Required for new patient
-      patientUsername,     // Required for new patient
-      patientPassword,     // Required for new patient
-      patientFullName,     // Required for new patient
-      patientPhone,        // Optional
-      patientAddress,      // Optional
-      patientGender,       // Optional
-      patientDateOfBirth,  // Optional
-      patientBloodGroup,   // Optional
-      
-      // Appointment fields
+      patientId,           // Required - ID of existing patient
       doctorId,
       appointmentDate,
       appointmentTime,
@@ -39,87 +153,16 @@ export const createAppointmentByReceptionist = async (req, res) => {
       status = 'approved'
     } = req.body;
 
-    let patientProfile;
-    let isNewPatient = false;
-
     // ============================================
-    // CASE 1: Existing patient (by patientId)
+    // Validate Required Fields
     // ============================================
-    if (patientId) {
-      // Try to find by PatientProfile._id
-      patientProfile = await PatientProfile.findById(patientId);
-      
-      if (!patientProfile) {
-        // Try to find by User._id
-        const user = await User.findById(patientId);
-        if (user) {
-          patientProfile = await PatientProfile.findOne({ user: user._id });
-        }
-      }
-      
-      if (!patientProfile) {
-        return res.status(404).json({
-          success: false,
-          message: 'Patient not found with the provided ID'
-        });
-      }
-    } 
-    
-    // ============================================
-    // CASE 2: New patient (walk-in)
-    // ============================================
-    else {
-      // Validate required fields for new patient
-      if (!patientEmail || !patientUsername || !patientPassword || !patientFullName) {
-        return res.status(400).json({
-          success: false,
-          message: 'For new patients, patientEmail, patientUsername, patientPassword, and patientFullName are required'
-        });
-      }
-
-      // Check if user already exists with this email or username
-      const existingUser = await User.findOne({
-        $or: [{ email: patientEmail }, { username: patientUsername }]
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'patientId is required'
       });
-
-      if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          message: 'User already exists with this email or username. Please use patientId instead.'
-        });
-      }
-
-      // Create new User with patient role
-      const newUser = new User({
-        email: patientEmail,
-        username: patientUsername,
-        password: patientPassword, // Will be hashed by pre-save hook
-        role: 'patient',
-        isActive: true,
-        isEmailVerified: true // Receptionist verified in person
-      });
-
-      await newUser.save();
-
-      // Create PatientProfile
-      patientProfile = new PatientProfile({
-        user: newUser._id,
-        fullName: patientFullName,
-        phone: patientPhone || '',
-        address: patientAddress || '',
-        gender: patientGender || '',
-        dateOfBirth: patientDateOfBirth || null,
-        bloodGroup: patientBloodGroup || '',
-        isProfileCompleted: true // Receptionist filled the data
-      });
-
-      await patientProfile.save();
-      isNewPatient = true;
     }
 
-    // ============================================
-    // Validate Appointment Fields
-    // ============================================
     if (!doctorId || !appointmentDate || !appointmentTime) {
       return res.status(400).json({
         success: false,
@@ -128,7 +171,27 @@ export const createAppointmentByReceptionist = async (req, res) => {
     }
 
     // ============================================
-    // Validate Doctor Exists and is Available
+    // Find Patient
+    // ============================================
+    let patientProfile = await PatientProfile.findById(patientId);
+    
+    if (!patientProfile) {
+      // Try to find by User._id
+      const user = await User.findById(patientId);
+      if (user) {
+        patientProfile = await PatientProfile.findOne({ user: user._id });
+      }
+    }
+    
+    if (!patientProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found. Please create the patient first using the patient registration endpoint.'
+      });
+    }
+
+    // ============================================
+    // Find and Validate Doctor
     // ============================================
     const doctorProfile = await DoctorProfile.findById(doctorId);
     if (!doctorProfile) {
@@ -153,7 +216,7 @@ export const createAppointmentByReceptionist = async (req, res) => {
       doctor: doctorProfile._id,
       appointmentDate: new Date(appointmentDate),
       appointmentTime: appointmentTime,
-      status: { $in: ['pending', 'approved'] } // Don't check completed/cancelled
+      status: { $in: ['pending', 'approved'] }
     });
 
     if (existingAppointment) {
@@ -198,40 +261,22 @@ export const createAppointmentByReceptionist = async (req, res) => {
       .populate('doctor', 'fullName department specialization')
       .populate('createdByUser', 'username email');
 
-    // Prepare response
-    const responseData = {
-      appointment: populatedAppointment,
-      patientInfo: {
-        isNewPatient: isNewPatient,
-        patientId: patientProfile._id,
-        fullName: patientProfile.fullName,
-        phone: patientProfile.phone,
-        email: patientProfile.user?.email || null
-      }
-    };
-
-    // If new patient, include credentials
-    if (isNewPatient) {
-      responseData.patientInfo.credentials = {
-        email: patientEmail,
-        username: patientUsername,
-        // Don't send password back for security
-        message: 'Patient account created. Temporary password has been set.'
-      };
-    }
-
     res.status(201).json({
       success: true,
-      message: isNewPatient 
-        ? 'Appointment created successfully and new patient registered' 
-        : 'Appointment created successfully',
-      data: responseData
+      message: 'Appointment created successfully',
+      data: {
+        appointment: populatedAppointment,
+        patientInfo: {
+          patientId: patientProfile._id,
+          fullName: patientProfile.fullName,
+          phone: patientProfile.phone
+        }
+      }
     });
 
   } catch (error) {
     console.error('Create appointment (receptionist) error:', error);
 
-    // Handle validation errors
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -241,7 +286,6 @@ export const createAppointmentByReceptionist = async (req, res) => {
       });
     }
 
-    // Handle duplicate appointment
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -249,7 +293,6 @@ export const createAppointmentByReceptionist = async (req, res) => {
       });
     }
 
-    // Handle other errors
     res.status(500).json({
       success: false,
       message: 'Failed to create appointment',
@@ -872,6 +915,479 @@ export const searchDoctors = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to search doctors',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * Update patient profile (Receptionist)
+ */
+export const updatePatientByReceptionist = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Handle FormData - fields come from req.body when using multer
+    // Handle JSON - fields come from req.body directly
+    const {
+      fullName,
+      email,
+      phone,
+      address,
+      gender,
+      dateOfBirth,
+      profileImage,
+      bloodGroup
+    } = req.body;
+
+    // DEBUG: Log what we received
+    console.log('Received body:', req.body);
+    console.log('Received file:', req.file);
+
+    // If using FormData with file upload, profileImage might be a file
+    let imageUrl = profileImage;
+    if (req.file) {
+      // If there's a file, upload to Cloudinary (you'll need to implement this)
+      // For now, we'll use the file path or buffer
+      console.log('File received:', req.file.originalname);
+      // imageUrl = await uploadToCloudinary(req.file.buffer);
+    }
+
+    // ============================================
+    // Find Patient Profile
+    // ============================================
+    const patient = await PatientProfile.findById(id);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found'
+      });
+    }
+
+    // ============================================
+    // Update User Model (if email or profileImage provided)
+    // ============================================
+    const user = await User.findById(patient.user);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found for this patient'
+      });
+    }
+
+    // Update email if provided
+    if (email !== undefined && email !== null && email !== '') {
+      // Check if email is already taken by another user
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({ 
+          email: email,
+          _id: { $ne: user._id }
+        });
+        
+        if (existingUser) {
+          return res.status(409).json({
+            success: false,
+            message: 'Email already exists for another user'
+          });
+        }
+        
+        user.email = email;
+      }
+    }
+
+    // Update profile image if provided
+    if (imageUrl !== undefined && imageUrl !== null && imageUrl !== '') {
+      user.profileImage = imageUrl;
+    }
+
+    // Save user updates
+    await user.save();
+
+    // ============================================
+    // Update PatientProfile
+    // ============================================
+    const updateData = {};
+    
+    // Only update fields that are provided and not empty
+    if (fullName !== undefined && fullName !== null && fullName !== '') {
+      updateData.fullName = fullName;
+    }
+    if (phone !== undefined && phone !== null && phone !== '') {
+      updateData.phone = phone;
+    }
+    if (address !== undefined && address !== null && address !== '') {
+      updateData.address = address;
+    }
+    if (gender !== undefined && gender !== null && gender !== '') {
+      updateData.gender = gender;
+    }
+    if (dateOfBirth !== undefined && dateOfBirth !== null && dateOfBirth !== '') {
+      updateData.dateOfBirth = dateOfBirth;
+    }
+    if (bloodGroup !== undefined && bloodGroup !== null && bloodGroup !== '') {
+      updateData.bloodGroup = bloodGroup;
+    }
+
+    // If any patient profile fields to update
+    if (Object.keys(updateData).length > 0) {
+      // Set profile as completed if essential fields are filled
+      if (fullName && phone && address) {
+        updateData.isProfileCompleted = true;
+      }
+
+      await PatientProfile.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+    }
+
+    // ============================================
+    // Get Updated Patient Profile
+    // ============================================
+    const updatedPatient = await PatientProfile.findById(id)
+      .populate('user', 'username email profileImage isActive');
+
+    // Calculate age from dateOfBirth if available
+    let age = null;
+    if (updatedPatient.dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(updatedPatient.dateOfBirth);
+      age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+    }
+
+    // ============================================
+    // Response
+    // ============================================
+    res.status(200).json({
+      success: true,
+      message: 'Patient profile updated successfully',
+      data: {
+        _id: updatedPatient._id,
+        userId: updatedPatient.user._id,
+        fullName: updatedPatient.fullName,
+        email: updatedPatient.user.email,
+        phone: updatedPatient.phone,
+        address: updatedPatient.address,
+        gender: updatedPatient.gender,
+        dateOfBirth: updatedPatient.dateOfBirth,
+        age: age,
+        profileImage: updatedPatient.user.profileImage,
+        bloodGroup: updatedPatient.bloodGroup,
+        isProfileCompleted: updatedPatient.isProfileCompleted,
+        user: {
+          username: updatedPatient.user.username,
+          isActive: updatedPatient.user.isActive
+        },
+        updatedFields: {
+          fullName: fullName !== undefined,
+          email: email !== undefined,
+          phone: phone !== undefined,
+          address: address !== undefined,
+          gender: gender !== undefined,
+          dateOfBirth: dateOfBirth !== undefined,
+          profileImage: profileImage !== undefined,
+          bloodGroup: bloodGroup !== undefined
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Update patient error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update patient',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * Update receptionist profile
+ */
+export const updateReceptionistProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      fullName,
+      email,
+      phone,
+      address
+    } = req.body;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // ============================================
+    // Handle Profile Image Upload
+    // ============================================
+    let profileImageUrl = null;
+    
+    if (req.file) {
+      try {
+        profileImageUrl = await uploadToCloudinary(req.file.buffer);
+        console.log('Profile image uploaded to Cloudinary:', profileImageUrl);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload profile image',
+          error: uploadError.message
+        });
+      }
+    }
+
+    // ============================================
+    // Update User Fields
+    // ============================================
+    const updateData = {};
+
+    if (fullName !== undefined) updateData.fullName = fullName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+    
+    // Handle email update with uniqueness check
+    if (email !== undefined && email !== user.email) {
+      const existingUser = await User.findOne({ 
+        email: email,
+        _id: { $ne: userId }
+      });
+      
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email already exists for another user'
+        });
+      }
+      updateData.email = email;
+    }
+
+    if (profileImageUrl) {
+      updateData.profileImage = profileImageUrl;
+    }
+
+    // Check if any field is provided
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one field must be provided for update'
+      });
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password -refreshToken -__v');
+
+    res.status(200).json({
+      success: true,
+      message: 'Receptionist profile updated successfully',
+      data: {
+        _id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        profileImage: updatedUser.profileImage,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        imageUpdated: !!profileImageUrl,
+        updatedFields: Object.keys(updateData)
+      }
+    });
+
+  } catch (error) {
+    console.error('Update receptionist profile error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get receptionist profile
+ */
+export const getReceptionistProfile = async (req, res) => {
+
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).select('-password -refreshToken -__v');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        profileImage: user.profileImage,
+        username: user.username,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Get receptionist profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile',
+      error: error.message
+    });
+  }
+};
+
+
+
+/**
+ * Change receptionist password
+ */
+export const changeReceptionistPassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validate required fields
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirm password is required'
+      });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match'
+      });
+    }
+
+    // Check if new password is same as current password
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // ✅ FIX: Use findById with password field included
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // ✅ FIX: Only set the password and save (don't update other fields)
+    user.password = newPassword;
+    
+    // Update passwordChangedAt if the model has this field
+    if (user.schema.path('passwordChangedAt')) {
+      user.passwordChangedAt = new Date();
+    }
+
+    // ✅ FIX: Save the user directly - this will only validate modified fields
+    await user.save({ validateModifiedOnly: true });
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please login again with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Change receptionist password error:', error);
+
+    // Handle validation errors from User model
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Password validation failed',
+        errors: errors
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
       error: error.message
     });
   }
