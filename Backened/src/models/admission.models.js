@@ -14,6 +14,7 @@ const admissionSchema = new mongoose.Schema(
       ref: 'DoctorProfile',
       required: [true, 'Doctor reference is required']
     },
+    
     bedNumber: {
       type: String,
       required: [true, 'Bed number is required'],

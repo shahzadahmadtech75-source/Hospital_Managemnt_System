@@ -9,14 +9,17 @@ import receptionistRoutes from './routes/receptionist.routes.js';
 import patientProfileRoutes from './routes/patientProfile.routes.js';
 import appointmentRoutes from './routes/appointment.routes.js';
 import doctorProfileRoutes from './routes/doctorProfile.routes.js';
+import nurseRoutes from './routes/nurse.routes.js';
+
+
 
 const app = express();
 
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-production-domain.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
+  ? ['https://your-production-domain.com'] 
+  : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -41,6 +44,8 @@ app.use('/api/v1/receptionist', receptionistRoutes);
 app.use('/api/v1/patient', patientProfileRoutes);
 app.use('/api/v1/patient', appointmentRoutes);
 app.use('/api/v1/doctor', doctorProfileRoutes);
+// Nurse routes
+app.use('/api/v1/nurse', nurseRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

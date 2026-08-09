@@ -22,7 +22,9 @@ import {
   getReports,
   updateReport,
   deleteReport,
-  changePassword
+  changePassword,
+  editAppointment,
+  deleteAppointment
 } from '../controllers/doctorProfile.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
@@ -86,6 +88,14 @@ router.patch('/appointments/:id/status',
   authenticate, 
   authorize('doctor'),
    updateAppointmentStatusByDoctor);
+
+   // Edit appointment route
+router.patch(
+  '/appointments/:id',
+  authenticate,
+  authorize('doctor'),
+  editAppointment
+);
 
    // GET /api/v1/doctor/prescriptions (NEW)
 router.get('/prescriptions',
@@ -180,5 +190,12 @@ router.patch(
   authenticate,
   authorize('doctor'),
   changePassword
+);
+
+router.delete(
+  '/appointments/:id',
+  authenticate,
+  authorize('doctor'),
+  deleteAppointment
 );
 export default router;

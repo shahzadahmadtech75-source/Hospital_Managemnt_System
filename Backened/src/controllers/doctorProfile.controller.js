@@ -1788,3 +1788,156 @@ export const changePassword = async (req, res) => {
     });
   }
 };
+
+// Edit appointment
+export const editAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { patientId, appointmentDate, appointmentTime, reason } = req.body;
+
+    // Get doctor profile
+    const doctorProfile = await DoctorProfile.findOne({ user: req.user.id });
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found',
+      });
+    }
+
+    // Find appointment and verify it belongs to this doctor
+    const appointment = await Appointment.findOne({
+      _id: id,
+      doctor: doctorProfile._id,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found or you are not authorized to edit it',
+      });
+    }
+
+    // Check if appointment can be edited
+    const nonEditableStatuses = ['completed', 'cancelled', 'rejected'];
+    if (nonEditableStatuses.includes(appointment.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot edit appointment with status: ${appointment.status}`,
+      });
+    }
+
+    // If patientId is provided, verify the patient exists
+    if (patientId) {
+      const patient = await PatientProfile.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: 'Patient not found',
+        });
+      }
+      appointment.patient = patientId;
+    }
+
+    // Update fields if provided
+    if (appointmentDate) {
+      // Validate appointment date (should not be in the past)
+      const date = new Date(appointmentDate);
+      if (date < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Appointment date cannot be in the past',
+        });
+      }
+      appointment.appointmentDate = appointmentDate;
+    }
+
+    if (appointmentTime) {
+      // Validate time format (HH:MM)
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(appointmentTime)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid time format. Please use HH:MM format',
+        });
+      }
+      appointment.appointmentTime = appointmentTime;
+    }
+
+    if (reason) {
+      appointment.reason = reason;
+    }
+
+    await appointment.save();
+
+    // Populate response
+    const updatedAppointment = await Appointment.findById(appointment._id)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName specialization');
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment updated successfully',
+      data: updatedAppointment,
+    });
+  } catch (error) {
+    console.error('Error editing appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to edit appointment',
+      error: error.message,
+    });
+  }
+};
+
+// Delete appointment
+export const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get doctor profile
+    const doctorProfile = await DoctorProfile.findOne({ user: req.user.id });
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor profile not found',
+      });
+    }
+
+    // Find appointment and verify it belongs to this doctor
+    const appointment = await Appointment.findOne({
+      _id: id,
+      doctor: doctorProfile._id,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found or you are not authorized to delete it',
+      });
+    }
+
+    // Check if appointment can be deleted
+    const nonDeletableStatuses = ['completed', 'cancelled'];
+    if (nonDeletableStatuses.includes(appointment.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete appointment with status: ${appointment.status}`,
+      });
+    }
+
+    // Delete the appointment
+    await appointment.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete appointment',
+      error: error.message,
+    });
+  }
+};
