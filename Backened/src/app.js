@@ -10,6 +10,7 @@ import patientProfileRoutes from './routes/patientProfile.routes.js';
 import appointmentRoutes from './routes/appointment.routes.js';
 import doctorProfileRoutes from './routes/doctorProfile.routes.js';
 import nurseRoutes from './routes/nurse.routes.js';
+import accountantRoutes from './routes/accountant.routes.js'
 
 
 
@@ -46,6 +47,7 @@ app.use('/api/v1/patient', appointmentRoutes);
 app.use('/api/v1/doctor', doctorProfileRoutes);
 // Nurse routes
 app.use('/api/v1/nurse', nurseRoutes);
+app.use('/api/v1/accountant', accountantRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

@@ -2,6 +2,7 @@ import Appointment from '../models/appointment.model.js';
 import PatientProfile from '../models/patientProfile.model.js';
 import DoctorProfile from '../models/doctorProfile.model.js';
 import User from '../models/user.model.js';
+import ReceptionistProfile from '../models/receptionistProfile.model.js';
 import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 /**
@@ -1118,33 +1119,63 @@ export const updatePatientByReceptionist = async (req, res) => {
 };
 
 
-/**
- * Update receptionist profile
- */
+// Get receptionist profile
+export const getReceptionistProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+
+    // Get user
+    const user = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Find receptionist profile
+    const profile = await ReceptionistProfile.findOne({ user: userId });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+        profile: profile,
+        isProfileCompleted: profile ? true : false,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching receptionist profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch receptionist profile',
+      error: error.message,
+    });
+  }
+};
+
+// Update receptionist profile
 export const updateReceptionistProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const {
-      fullName,
-      email,
-      phone,
-      address
-    } = req.body;
+    const userId = req.user.userId || req.user.id;
+    const { fullName, phone, address } = req.body;
 
     // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
       });
     }
 
-    // ============================================
-    // Handle Profile Image Upload
-    // ============================================
+    // Handle profile image upload if provided
     let profileImageUrl = null;
-    
     if (req.file) {
       try {
         profileImageUrl = await uploadToCloudinary(req.file.buffer);
@@ -1154,72 +1185,56 @@ export const updateReceptionistProfile = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: 'Failed to upload profile image',
-          error: uploadError.message
+          error: uploadError.message,
         });
       }
     }
 
-    // ============================================
-    // Update User Fields
-    // ============================================
-    const updateData = {};
+    // Find or create receptionist profile
+    let profile = await ReceptionistProfile.findOne({ user: userId });
 
-    if (fullName !== undefined) updateData.fullName = fullName;
-    if (phone !== undefined) updateData.phone = phone;
-    if (address !== undefined) updateData.address = address;
-    
-    // Handle email update with uniqueness check
-    if (email !== undefined && email !== user.email) {
-      const existingUser = await User.findOne({ 
-        email: email,
-        _id: { $ne: userId }
+    if (!profile) {
+      // Create new profile
+      profile = new ReceptionistProfile({
+        user: userId,
+        fullName: fullName || '',
+        phone: phone || null,
+        address: address || null,
+        profileImage: profileImageUrl,
       });
-      
-      if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          message: 'Email already exists for another user'
-        });
-      }
-      updateData.email = email;
+    } else {
+      // Update existing profile
+      if (fullName !== undefined) profile.fullName = fullName;
+      if (phone !== undefined) profile.phone = phone || null;
+      if (address !== undefined) profile.address = address || null;
+      if (profileImageUrl) profile.profileImage = profileImageUrl;
     }
 
+    await profile.save();
+
+    // Update user profileImage if image was uploaded
     if (profileImageUrl) {
-      updateData.profileImage = profileImageUrl;
+      user.profileImage = profileImageUrl;
+      await user.save();
     }
 
-    // Check if any field is provided
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'At least one field must be provided for update'
-      });
-    }
-
-    // Update user
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('-password -refreshToken -__v');
+    // Get updated user with safe fields
+    const updatedUser = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
 
     res.status(200).json({
       success: true,
-      message: 'Receptionist profile updated successfully',
+      message: profile.isNew ? 'Receptionist profile created successfully' : 'Receptionist profile updated successfully',
       data: {
-        _id: updatedUser._id,
-        fullName: updatedUser.fullName,
-        email: updatedUser.email,
-        phone: updatedUser.phone,
-        address: updatedUser.address,
-        profileImage: updatedUser.profileImage,
-        username: updatedUser.username,
-        role: updatedUser.role,
-        imageUpdated: !!profileImageUrl,
-        updatedFields: Object.keys(updateData)
-      }
+        user: {
+          _id: updatedUser._id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+        },
+        profile: profile,
+        isProfileCompleted: true,
+      },
     });
-
   } catch (error) {
     console.error('Update receptionist profile error:', error);
 
@@ -1228,62 +1243,17 @@ export const updateReceptionistProfile = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors
+        errors,
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Failed to update profile',
-      error: error.message
+      error: error.message,
     });
   }
 };
-
-/**
- * Get receptionist profile
- */
-export const getReceptionistProfile = async (req, res) => {
-
-  try {
-    const userId = req.user.id;
-
-    const user = await User.findById(userId).select('-password -refreshToken -__v');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        profileImage: user.profileImage,
-        username: user.username,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
-    });
-
-  } catch (error) {
-    console.error('Get receptionist profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve profile',
-      error: error.message
-    });
-  }
-};
-
-
 
 /**
  * Change receptionist password

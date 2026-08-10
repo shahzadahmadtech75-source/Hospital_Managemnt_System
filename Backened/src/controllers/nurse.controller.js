@@ -3,6 +3,9 @@ import User from '../models/user.model.js';
 import Bed from '../models/bed.models.js';
 import Admission from '../models/admission.models.js';
 import DoctorProfile from '../models/doctorProfile.model.js';
+import Report from '../models/report.models.js';
+import Operation from '../models/operation.model.js';
+import NurseProfile from '../models/nurseProfile.model.js';
 import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 // Get all patients
@@ -957,6 +960,613 @@ export const deleteAdmission = async (req, res) => {
       success: false,
       message: 'Failed to delete admission',
       error: error.message,
+    });
+  }
+};
+
+
+// Create report
+export const createReport = async (req, res) => {
+  try {
+    const { patientId, doctorId, type, description, reportDate } = req.body;
+
+    // Validate required fields
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Patient ID is required',
+      });
+    }
+
+    if (!doctorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor ID is required',
+      });
+    }
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Report type is required',
+      });
+    }
+
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Description is required',
+      });
+    }
+
+    // Validate type
+    const validTypes = ['operation', 'birth', 'death'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report type. Must be operation, birth, or death',
+      });
+    }
+
+    // Verify patient exists
+    const patient = await PatientProfile.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    // Verify doctor exists
+    const doctor = await DoctorProfile.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found',
+      });
+    }
+
+    // Handle PDF upload if provided
+    let pdfUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer, {
+        folder: 'hms/reports',
+        resourceType: 'raw',
+        returnFullResult: true,
+      });
+      pdfUrl = result.secure_url;
+    }
+
+    // Create report
+    const report = await Report.create({
+      patient: patientId,
+      doctor: doctorId,
+      type,
+      description,
+      reportDate: reportDate || new Date(),
+      pdfUrl,
+    });
+
+    // If type is 'operation', create operation history entry
+    if (type === 'operation') {
+      await Operation.create({
+        patient: patientId,
+        doctor: doctorId,
+        description: description,
+        operationDate: reportDate || new Date(),
+        notes: `Report ID: ${report._id}`,
+        status: 'completed',
+      });
+    }
+
+    // Populate response
+    const populatedReport = await Report.findById(report._id)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName department specialization profileImage');
+
+    res.status(201).json({
+      success: true,
+      message: 'Report created successfully',
+      data: populatedReport,
+    });
+  } catch (error) {
+    console.error('Error creating report:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create report',
+      error: error.message,
+    });
+  }
+};
+
+// Get reports
+export const getReports = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    // Validate type if provided
+    if (type) {
+      const validTypes = ['operation', 'birth', 'death'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid report type. Must be operation, birth, or death',
+        });
+      }
+    }
+
+    // Build query
+    const query = {};
+    if (type) {
+      query.type = type;
+    }
+
+    // Get reports
+    const reports = await Report.find(query)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName department specialization profileImage')
+      .sort({ reportDate: -1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: reports.length,
+      data: reports,
+    });
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reports',
+      error: error.message,
+    });
+  }
+};
+
+// Update report
+export const updateReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { patientId, doctorId, type, description, reportDate } = req.body;
+
+    // Find report
+    const report = await Report.findById(id);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found',
+      });
+    }
+
+    // Store old type for operation history consistency
+    const oldType = report.type;
+    const oldPatientId = report.patient;
+    const oldDoctorId = report.doctor;
+
+    // Validate type if provided
+    if (type) {
+      const validTypes = ['operation', 'birth', 'death'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid report type. Must be operation, birth, or death',
+        });
+      }
+    }
+
+    // Verify patient exists if patientId is provided
+    if (patientId) {
+      const patient = await PatientProfile.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: 'Patient not found',
+        });
+      }
+      report.patient = patientId;
+    }
+
+    // Verify doctor exists if doctorId is provided
+    if (doctorId) {
+      const doctor = await DoctorProfile.findById(doctorId);
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Doctor not found',
+        });
+      }
+      report.doctor = doctorId;
+    }
+
+    // Update fields
+    if (type) report.type = type;
+    if (description) report.description = description;
+    if (reportDate) report.reportDate = reportDate;
+
+    await report.save();
+
+    // Handle operation history consistency if type changed
+    const finalType = type || oldType;
+    const finalPatientId = patientId || oldPatientId;
+    const finalDoctorId = doctorId || oldDoctorId;
+
+    // If type changed to/from operation
+    if (type && type !== oldType) {
+      // If changed to operation, create operation entry
+      if (type === 'operation') {
+        await Operation.create({
+          patient: finalPatientId,
+          doctor: finalDoctorId,
+          description: description || report.description,
+          operationDate: reportDate || report.reportDate,
+          notes: `Report ID: ${report._id}`,
+          status: 'completed',
+        });
+      }
+      // If changed from operation to something else, remove the associated operation
+      else if (oldType === 'operation') {
+        await Operation.deleteOne({
+          patient: oldPatientId,
+          doctor: oldDoctorId,
+          notes: `Report ID: ${report._id}`,
+        });
+      }
+    }
+    // If type remains operation but patient/doctor/description/date updated, sync operation
+    else if (finalType === 'operation') {
+      await Operation.findOneAndUpdate(
+        {
+          patient: finalPatientId,
+          doctor: finalDoctorId,
+          notes: `Report ID: ${report._id}`,
+        },
+        {
+          description: description || report.description,
+          operationDate: reportDate || report.reportDate,
+        },
+        { upsert: true }
+      );
+    }
+
+    // Populate response
+    const updatedReport = await Report.findById(report._id)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName department specialization profileImage');
+
+    res.status(200).json({
+      success: true,
+      message: 'Report updated successfully',
+      data: updatedReport,
+    });
+  } catch (error) {
+    console.error('Error updating report:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update report',
+      error: error.message,
+    });
+  }
+};
+
+// Delete report
+export const deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find report
+    const report = await Report.findById(id);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found',
+      });
+    }
+
+    // Store report type and patient for operation history cleanup
+    const reportType = report.type;
+    const patientId = report.patient;
+    const doctorId = report.doctor;
+
+    // Delete the report
+    await report.deleteOne();
+
+    // If report type is 'operation', remove the corresponding operation history entry
+    if (reportType === 'operation') {
+      await Operation.deleteOne({
+        patient: patientId,
+        doctor: doctorId,
+        notes: `Report ID: ${id}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Report deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete report',
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
+// Get nurse profile
+export const getNurseProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+
+    // Get user
+    const user = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Find nurse profile
+    const profile = await NurseProfile.findOne({ user: userId });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
+        profile: profile,
+        isProfileCompleted: profile ? true : false,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching nurse profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch nurse profile',
+      error: error.message,
+    });
+  }
+};
+
+// Create or update nurse profile
+export const updateNurseProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { fullName, phone, address, profileDescription } = req.body;
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Handle profile image upload if provided
+    let profileImageUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      profileImageUrl = result;
+    }
+
+    // Find or create nurse profile
+    let profile = await NurseProfile.findOne({ user: userId });
+
+    if (!profile) {
+      // Create new profile
+      profile = new NurseProfile({
+        user: userId,
+        fullName: fullName || '',
+        phone: phone || null,
+        address: address || null,
+        profileDescription: profileDescription || null,
+        profileImage: profileImageUrl,
+      });
+    } else {
+      // Update existing profile
+      if (fullName) profile.fullName = fullName;
+      if (phone !== undefined) profile.phone = phone || null;
+      if (address !== undefined) profile.address = address || null;
+      if (profileDescription !== undefined) profile.profileDescription = profileDescription || null;
+      if (profileImageUrl) profile.profileImage = profileImageUrl;
+    }
+
+    await profile.save();
+
+    // Update user profileImage if image was uploaded
+    if (profileImageUrl) {
+      user.profileImage = profileImageUrl;
+      await user.save();
+    }
+
+    // Get updated user
+    const updatedUser = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
+
+    res.status(200).json({
+      success: true,
+      message: profile.isNew ? 'Nurse profile created successfully' : 'Nurse profile updated successfully',
+      data: {
+        user: {
+          _id: updatedUser._id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          profileImage: updatedUser.profileImage,
+        },
+        profile: profile,
+        isProfileCompleted: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error upserting nurse profile:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save nurse profile',
+      error: error.message,
+    });
+  }
+};
+
+
+// Change nurse password
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Validate required fields
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirm password is required'
+      });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match'
+      });
+    }
+
+    // Check if new password is same as current password
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // Find user with password field included
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    
+    // Update passwordChangedAt if the model has this field
+    if (user.schema.path('passwordChangedAt')) {
+      user.passwordChangedAt = new Date();
+    }
+
+    // Invalidate refresh token
+    user.refreshToken = null;
+
+    // Save with validation only for modified fields
+    await user.save({ validateModifiedOnly: true });
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please login again with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Password validation failed',
+        errors: errors,
+        requirements: {
+          minLength: 8,
+          uppercase: 'At least one uppercase letter (A-Z)',
+          lowercase: 'At least one lowercase letter (a-z)',
+          number: 'At least one number (0-9)',
+          specialChar: 'At least one special character (@$!%*?&)'
+        }
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
     });
   }
 };

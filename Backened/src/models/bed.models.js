@@ -36,7 +36,7 @@ const bedSchema = new mongoose.Schema(
 );
 
 // Indexes for efficient queries
-bedSchema.index({ bedNumber: 1 }, { unique: true });
+
 bedSchema.index({ status: 1 });
 bedSchema.index({ bedType: 1 });
 bedSchema.index({ status: 1, bedType: 1 });

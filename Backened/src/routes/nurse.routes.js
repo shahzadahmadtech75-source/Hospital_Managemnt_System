@@ -10,13 +10,37 @@ import { getAllPatients,
     getAllAdmissions,
     createAdmission,
     updateAdmission,
-    deleteAdmission
+    deleteAdmission,
+    getReports,
+    createReport,
+    updateReport,
+    deleteReport,
+    updateNurseProfile,
+    getNurseProfile,
+    changePassword
  } from '../controllers/nurse.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
-import { uploadProfileImage } from '../middlewares/upload.middleware.js';
+import { uploadProfileImage,uploadPdf,handleUploadError } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
+
+
+// Profile routes
+router.get(
+  '/profile',
+  authenticate,
+  authorize('nurse'),
+  getNurseProfile
+);
+
+router.patch(
+  '/profile',
+  authenticate,
+  authorize('nurse'),
+  uploadProfileImage,
+  updateNurseProfile
+);
 
 // Patient routes
 router.get(
@@ -108,4 +132,44 @@ router.delete(
   authorize('nurse'),
   deleteAdmission
 );
+
+// Report routes
+router.post(
+  '/reports',
+  authenticate,
+  authorize('nurse'),
+  uploadPdf,
+  handleUploadError,
+  createReport
+);
+
+router.get(
+  '/reports',
+  authenticate,
+  authorize('nurse'),
+  getReports
+);
+
+router.patch(
+  '/reports/:id',
+  authenticate,
+  authorize('nurse'),
+  updateReport
+);
+
+router.delete(
+  '/reports/:id',
+  authenticate,
+  authorize('nurse'),
+  deleteReport
+);
+
+// Change password route
+router.patch(
+  '/change-password',
+  authenticate,
+  authorize('nurse'),
+  changePassword
+);
+
 export default router;

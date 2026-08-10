@@ -59,7 +59,11 @@ router.patch('/appointments/:id/status', updateAppointmentStatus);
 
 
 // GET /api/v1/receptionist/profile
-router.get('/profile', getReceptionistProfile);
+// Profile routes
+router.get(
+  '/profile',
+  getReceptionistProfile
+);
 
 // PATCH /api/v1/receptionist/profile - With image upload support
 router.patch('/profile', uploadProfileImage,handleUploadError, updateReceptionistProfile);
