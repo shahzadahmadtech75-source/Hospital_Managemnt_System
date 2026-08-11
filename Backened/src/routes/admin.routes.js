@@ -10,7 +10,17 @@ import { createAdmin ,
   getDepartments,
   updateDepartment,
   deleteDepartment,
-  getStaff,getStaffProfile
+  getStaff,getStaffProfile,
+  getPatients,
+  getPatient,
+  createPatient,
+  activatePatient,
+  deactivatePatient,
+  getMonitorInvoices,
+  getMonitorInvoice,
+  getMonitorBedAllotments,
+  getMonitorReports,
+  getMonitorReport
  } from '../controllers/admin.controller.js';
 import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 
@@ -111,5 +121,79 @@ router.get(
   authenticate,
   authorize('admin'),
   getStaffProfile
+);
+
+// Patient routes
+router.get(
+  '/patients',
+  authenticate,
+  authorize('admin'),
+  getPatients
+);
+
+router.get(
+  '/patients/:id',
+  authenticate,
+  authorize('admin'),
+  getPatient
+);
+
+router.post(
+  '/patients',
+  authenticate,
+  authorize('admin'),
+  uploadProfileImage,
+  createPatient
+);
+
+router.patch(
+  '/patients/:id/activate',
+  authenticate,
+  authorize('admin'),
+  activatePatient
+);
+
+router.patch(
+  '/patients/:id/deactivate',
+  authenticate,
+  authorize('admin'),
+  deactivatePatient
+);
+
+
+// Monitor routes
+router.get(
+  '/monitor/invoices',
+  authenticate,
+  authorize('admin'),
+  getMonitorInvoices
+);
+
+router.get(
+  '/monitor/invoices/:id',
+  authenticate,
+  authorize('admin'),
+  getMonitorInvoice
+);
+
+router.get(
+  '/monitor/bed-allotments',
+  authenticate,
+  authorize('admin'),
+  getMonitorBedAllotments
+);
+
+router.get(
+  '/monitor/reports',
+  authenticate,
+  authorize('admin'),
+  getMonitorReports
+);
+
+router.get(
+  '/monitor/reports/:id',
+  authenticate,
+  authorize('admin'),
+  getMonitorReport
 );
 export default router;

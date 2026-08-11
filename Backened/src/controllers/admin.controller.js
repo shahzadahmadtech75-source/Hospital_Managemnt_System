@@ -11,6 +11,7 @@ import PatientProfile from '../models/patientProfile.model.js';
 import NurseProfile from '../models/nurseProfile.model.js';
 import AccountantProfile from '../models/accountantProfile.model.js';
 import ReceptionistProfile from '../models/receptionistProfile.model.js';
+import Admission from '../models/admission.models.js';
 
 
 /*
@@ -820,6 +821,792 @@ export const getStaffProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch staff profile',
+      error: error.message,
+    });
+  }
+};
+
+// Get all patients with their profiles
+export const getPatients = async (req, res) => {
+  try {
+    // Find all users with role 'patient'
+    const users = await User.find({ role: 'patient' })
+      .select('-password -refreshToken -passwordChangedAt')
+      .sort({ createdAt: -1 });
+
+    // Get patient profiles for all users
+    const patientsWithProfiles = await Promise.all(
+      users.map(async (user) => {
+        const profile = await PatientProfile.findOne({ user: user._id });
+
+        // Calculate age if dateOfBirth exists
+        let age = null;
+        if (profile && profile.dateOfBirth) {
+          const today = new Date();
+          const birthDate = new Date(profile.dateOfBirth);
+          age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+        }
+
+        return {
+          user: {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            profileImage: user.profileImage,
+            isActive: user.isActive,
+          },
+          profile: profile
+            ? {
+                _id: profile._id,
+                fullName: profile.fullName,
+                phone: profile.phone,
+                gender: profile.gender,
+                dateOfBirth: profile.dateOfBirth,
+                bloodGroup: profile.bloodGroup,
+                address: profile.address,
+                age: age,
+              }
+            : null,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      count: patientsWithProfiles.length,
+      data: patientsWithProfiles,
+    });
+  } catch (error) {
+    console.error('Error fetching patients:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patients',
+      error: error.message,
+    });
+  }
+};
+
+// Get single patient with profile
+export const getPatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find user by ID
+    const user = await User.findById(id).select('-password -refreshToken -passwordChangedAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+      });
+    }
+
+    // Verify user is a patient
+    if (user.role !== 'patient') {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not a patient',
+      });
+    }
+
+    // Find patient profile
+    const profile = await PatientProfile.findOne({ user: user._id });
+
+    // Calculate age if profile exists and has dateOfBirth
+    let age = null;
+    if (profile && profile.dateOfBirth) {
+      const today = new Date();
+      const birthDate = new Date(profile.dateOfBirth);
+      age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+    }
+
+    // Format profile data
+    let profileData = null;
+    let isProfileCompleted = false;
+
+    if (profile) {
+      profileData = {
+        _id: profile._id,
+        fullName: profile.fullName,
+        phone: profile.phone,
+        gender: profile.gender,
+        dateOfBirth: profile.dateOfBirth,
+        bloodGroup: profile.bloodGroup,
+        address: profile.address,
+        profileImage: profile.profileImage,
+        isProfileCompleted: profile.isProfileCompleted,
+        age: age,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      };
+      isProfileCompleted = true;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          profileImage: user.profileImage,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+        },
+        profile: profileData,
+        isProfileCompleted: isProfileCompleted,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching patient:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid patient ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patient',
+      error: error.message,
+    });
+  }
+};
+
+// Create patient
+export const createPatient = async (req, res) => {
+  try {
+    const {
+      username,
+      email,
+      password,
+      fullName,
+      phone,
+      gender,
+      address,
+      bloodGroup,
+      dateOfBirth,
+    } = req.body;
+
+    // Validate required fields
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required',
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required',
+      });
+    }
+
+    if (!fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Full name is required',
+      });
+    }
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone is required',
+      });
+    }
+
+    if (!gender) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gender is required',
+      });
+    }
+
+    if (!dateOfBirth) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date of birth is required',
+      });
+    }
+
+    // Check if username already exists
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username already exists',
+      });
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists',
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Handle profile image upload if provided
+    let profileImageUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      profileImageUrl = result;
+    }
+
+    // Create user
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword,
+      role: 'patient',
+      isActive: true,
+      isEmailVerified: false,
+      profileImage: profileImageUrl,
+    });
+
+    await user.save();
+
+    try {
+      // Create patient profile
+      const patientProfile = new PatientProfile({
+        user: user._id,
+        fullName,
+        phone,
+        gender,
+        dateOfBirth,
+        bloodGroup: bloodGroup || null,
+        address: address || null,
+        profileImage: profileImageUrl,
+        isProfileCompleted: true,
+      });
+
+      await patientProfile.save();
+
+      // Calculate age
+      let age = null;
+      if (dateOfBirth) {
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+      }
+
+      // Return created patient
+      res.status(201).json({
+        success: true,
+        message: 'Patient created successfully',
+        data: {
+          user: {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            profileImage: user.profileImage,
+            isActive: user.isActive,
+          },
+          profile: {
+            _id: patientProfile._id,
+            fullName: patientProfile.fullName,
+            phone: patientProfile.phone,
+            gender: patientProfile.gender,
+            dateOfBirth: patientProfile.dateOfBirth,
+            bloodGroup: patientProfile.bloodGroup,
+            address: patientProfile.address,
+            profileImage: patientProfile.profileImage,
+            age: age,
+          },
+          isProfileCompleted: true,
+        },
+      });
+    } catch (profileError) {
+      // If patient profile creation fails, delete the user to avoid orphan records
+      console.error('Patient profile creation failed, deleting user:', profileError);
+      await User.findByIdAndDelete(user._id);
+
+      // Re-throw the error to be caught by the outer catch block
+      throw new Error(`Failed to create patient profile: ${profileError.message}`);
+    }
+  } catch (error) {
+    console.error('Error creating patient:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create patient',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Activate patient
+export const activatePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+        data: null,
+      });
+    }
+
+    // Find user by ID, excluding sensitive fields
+    const user = await User.findById(id)
+      .select('-password -refreshToken -passwordChangedAt -__v');
+
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+        data: null,
+      });
+    }
+
+    // Verify user is a patient
+    if (user.role !== 'patient') {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not a patient',
+        data: null,
+      });
+    }
+
+    // Check if user is already active
+    if (user.isActive) {
+      return res.status(200).json({
+        success: true,
+        message: 'Patient account is already active',
+        data: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          profileImage: user.profileImage,
+        },
+      });
+    }
+
+    // Activate the patient
+    user.isActive = true;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Patient account activated successfully',
+      data: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        profileImage: user.profileImage,
+      },
+    });
+
+  } catch (error) {
+    console.error('Activate patient error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An internal server error occurred',
+      data: null,
+    });
+  }
+};
+
+// Deactivate patient
+export const deactivatePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format',
+        data: null,
+      });
+    }
+
+    // Find user by ID, excluding sensitive fields
+    const user = await User.findById(id)
+      .select('-password -refreshToken -passwordChangedAt -__v');
+
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found',
+        data: null,
+      });
+    }
+
+    // Verify user is a patient
+    if (user.role !== 'patient') {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not a patient',
+        data: null,
+      });
+    }
+
+    // Check if user is already inactive
+    if (!user.isActive) {
+      return res.status(200).json({
+        success: true,
+        message: 'Patient account is already deactivated',
+        data: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          profileImage: user.profileImage,
+        },
+      });
+    }
+
+    // Deactivate the patient
+    user.isActive = false;
+    
+    // Clear refresh token for security
+    user.refreshToken = null;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Patient account deactivated successfully',
+      data: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        profileImage: user.profileImage,
+      },
+    });
+
+  } catch (error) {
+    console.error('Deactivate patient error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An internal server error occurred',
+      data: null,
+    });
+  }
+};
+
+// Get all invoices for monitoring
+export const getMonitorInvoices = async (req, res) => {
+  try {
+    const invoices = await Invoice.find()
+      .populate('patient', '_id fullName phone profileImage')
+      .populate('doctor', '_id fullName department specialization')
+      .populate('appointment', '_id appointmentDate appointmentTime status')
+      .populate('admission', '_id bedNumber bedType admissionDate dischargeDate status')
+      .sort({ issueDate: -1, createdAt: -1 });
+
+    // Format response to match the actual Invoice model
+    const formattedInvoices = invoices.map(invoice => ({
+      _id: invoice._id,
+      invoiceNumber: invoice.invoiceNumber,
+      patient: invoice.patient,
+      doctor: invoice.doctor || null,
+      appointment: invoice.appointment || null,
+      admission: invoice.admission || null,
+      issueDate: invoice.issueDate,
+      dueDate: invoice.dueDate || null,
+      items: invoice.items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        amount: item.amount,
+      })),
+      subtotal: invoice.subtotal,
+      discount: invoice.discount,
+      tax: invoice.tax,
+      totalAmount: invoice.totalAmount,
+      paidAmount: invoice.paidAmount,
+      dueAmount: invoice.dueAmount,
+      paymentStatus: invoice.paymentStatus,
+      paymentMethod: invoice.paymentMethod || null,
+      notes: invoice.notes || null,
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formattedInvoices.length,
+      data: formattedInvoices,
+    });
+  } catch (error) {
+    console.error('Error fetching invoices for monitoring:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch invoices',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Get single invoice for monitoring
+export const getMonitorInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid invoice ID format',
+      });
+    }
+
+    // Find invoice with all populations
+    const invoice = await Invoice.findById(id)
+      .populate('patient', '_id fullName phone profileImage')
+      .populate('doctor', '_id fullName department specialization')
+      .populate('appointment', '_id appointmentDate appointmentTime status')
+      .populate('admission', '_id bedNumber bedType admissionDate dischargeDate status');
+
+    // Check if invoice exists
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
+    }
+
+    // Format response to match the actual Invoice model
+    const formattedInvoice = {
+      _id: invoice._id,
+      invoiceNumber: invoice.invoiceNumber,
+      patient: invoice.patient,
+      doctor: invoice.doctor || null,
+      appointment: invoice.appointment || null,
+      admission: invoice.admission || null,
+      issueDate: invoice.issueDate,
+      dueDate: invoice.dueDate || null,
+      items: invoice.items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        amount: item.amount,
+      })),
+      subtotal: invoice.subtotal,
+      discount: invoice.discount,
+      tax: invoice.tax,
+      totalAmount: invoice.totalAmount,
+      paidAmount: invoice.paidAmount,
+      dueAmount: invoice.dueAmount,
+      paymentStatus: invoice.paymentStatus,
+      paymentMethod: invoice.paymentMethod || null,
+      notes: invoice.notes || null,
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formattedInvoice,
+    });
+  } catch (error) {
+    console.error('Error fetching invoice for monitoring:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid invoice ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch invoice',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Get all bed allotments (admissions) for monitoring
+export const getMonitorBedAllotments = async (req, res) => {
+  try {
+    const allotments = await Admission.find()
+      .populate('patient', '_id fullName phone profileImage')
+      .populate('doctor', '_id fullName department specialization')
+      .sort({ createdAt: -1, admissionDate: -1 });
+
+    // Format response to match the actual Admission model fields
+    const formattedAllotments = allotments.map(allotment => ({
+      _id: allotment._id,
+      patient: allotment.patient,
+      doctor: allotment.doctor || null,
+      bedNumber: allotment.bedNumber,
+      bedType: allotment.bedType,
+      admissionDate: allotment.admissionDate,
+      dischargeDate: allotment.dischargeDate || null,
+      status: allotment.status,
+      reason: allotment.reason || null,
+      createdAt: allotment.createdAt,
+      updatedAt: allotment.updatedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formattedAllotments.length,
+      data: formattedAllotments,
+    });
+  } catch (error) {
+    console.error('Error fetching bed allotments for monitoring:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bed allotments',
+      error: error.message,
+    });
+  }
+};
+
+// Get all reports for monitoring
+export const getMonitorReports = async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .populate('patient', '_id fullName phone profileImage')
+      .populate('doctor', '_id fullName specialization department')
+      .sort({ reportDate: -1, createdAt: -1 });
+
+    // Format response to match the actual Report model fields
+    const formattedReports = reports.map(report => ({
+      _id: report._id,
+      patient: report.patient,
+      doctor: report.doctor,
+      type: report.type,
+      description: report.description,
+      reportDate: report.reportDate,
+      pdfUrl: report.pdfUrl || null,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formattedReports.length,
+      data: formattedReports,
+    });
+  } catch (error) {
+    console.error('Error fetching reports for monitoring:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reports',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Get single report for monitoring
+export const getMonitorReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID format',
+      });
+    }
+
+    // Find report with all populations
+    const report = await Report.findById(id)
+      .populate('patient', '_id fullName phone profileImage')
+      .populate('doctor', '_id fullName specialization department');
+
+    // Check if report exists
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found',
+      });
+    }
+
+    // Format response to match the actual Report model fields
+    const formattedReport = {
+      _id: report._id,
+      patient: report.patient,
+      doctor: report.doctor,
+      type: report.type,
+      description: report.description,
+      reportDate: report.reportDate,
+      pdfUrl: report.pdfUrl || null,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formattedReport,
+    });
+  } catch (error) {
+    console.error('Error fetching report for monitoring:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid report ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch report',
       error: error.message,
     });
   }
