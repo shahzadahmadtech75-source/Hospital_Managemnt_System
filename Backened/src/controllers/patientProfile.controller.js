@@ -1,5 +1,5 @@
 // src/controllers/patientProfile.controller.js
-
+import PDFDocument from 'pdfkit';
 import PatientProfile from '../models/patientProfile.model.js';
 import User from '../models/user.model.js';
 import Prescription from '../models/prescription.model.js';
@@ -725,6 +725,368 @@ export const getPatientInvoices = async (req, res) => {
       success: false,
       message: 'Failed to retrieve invoices',
       error: error.message
+    });
+  }
+};
+
+
+// Download invoice as PDF
+export const downloadInvoicePDF = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId || req.user.id;
+
+    // Find patient profile
+    const patientProfile = await PatientProfile.findOne({ user: userId });
+    if (!patientProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient profile not found',
+      });
+    }
+
+    // Find invoice and verify ownership
+    const invoice = await Invoice.findOne({
+      _id: id,
+      patient: patientProfile._id,
+    })
+      .populate('patient', 'fullName phone address profileImage')
+      .populate('doctor', 'fullName department specialization')
+      .populate('appointment', 'appointmentDate appointmentTime status')
+      .populate('admission', 'bedNumber bedType admissionDate dischargeDate');
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found or you are not authorized to view it',
+      });
+    }
+
+    // Create PDF document
+    const doc = new PDFDocument({
+      margin: 50,
+      size: 'A4',
+    });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`
+    );
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // ============================================
+    // PDF CONTENT
+    // ============================================
+
+    // Colors
+    const primaryColor = '#2563eb';
+    const secondaryColor = '#1e293b';
+    const lightGray = '#f1f5f9';
+    const darkGray = '#475569';
+
+    // ============================================
+    // HEADER
+    // ============================================
+    doc
+      .fillColor(primaryColor)
+      .fontSize(24)
+      .font('Helvetica-Bold')
+      .text('HOSPITAL MANAGEMENT SYSTEM', { align: 'center' })
+      .moveDown(0.5);
+
+    doc
+      .fillColor(secondaryColor)
+      .fontSize(12)
+      .font('Helvetica')
+      .text('123 Healthcare Street, Medical City, MC 12345', { align: 'center' })
+      .text('Phone: +1 234 567 890 | Email: info@hospital.com', { align: 'center' })
+      .moveDown(1);
+
+    // Divider
+    doc
+      .strokeColor(primaryColor)
+      .lineWidth(2)
+      .moveTo(50, doc.y)
+      .lineTo(545, doc.y)
+      .stroke()
+      .moveDown(1);
+
+    // ============================================
+    // INVOICE TITLE
+    // ============================================
+    doc
+      .fillColor(primaryColor)
+      .fontSize(20)
+      .font('Helvetica-Bold')
+      .text('INVOICE', { align: 'center' })
+      .moveDown(0.5);
+
+    // ============================================
+    // INVOICE DETAILS ROW
+    // ============================================
+    const startY = doc.y;
+
+    // Left Column - Invoice Details
+    doc
+      .fillColor(secondaryColor)
+      .fontSize(10)
+      .font('Helvetica')
+      .text(`Invoice Number: ${invoice.invoiceNumber}`, 50, startY)
+      .text(`Issue Date: ${new Date(invoice.issueDate).toLocaleDateString()}`, 50)
+      .text(`Due Date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}`, 50)
+      .text(`Status: ${invoice.paymentStatus.toUpperCase()}`, 50);
+
+    // Right Column - Patient Info
+    const rightColumnX = 350;
+    doc
+      .font('Helvetica-Bold')
+      .text('Bill To:', rightColumnX, startY)
+      .font('Helvetica')
+      .text(invoice.patient.fullName, rightColumnX)
+      .text(`Phone: ${invoice.patient.phone || 'N/A'}`, rightColumnX)
+      .text(`Address: ${invoice.patient.address || 'N/A'}`, rightColumnX);
+
+    doc.moveDown(1.5);
+
+    // ============================================
+    // REFERENCE INFO (if available)
+    // ============================================
+    if (invoice.doctor || invoice.appointment || invoice.admission) {
+      const refStartY = doc.y;
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .text('Reference Information:', 50, refStartY);
+
+      let refY = doc.y + 5;
+      if (invoice.doctor) {
+        doc
+          .font('Helvetica')
+          .text(`Doctor: ${invoice.doctor.fullName} (${invoice.doctor.department})`, 50, refY);
+        refY += 20;
+      }
+      if (invoice.appointment) {
+        doc.text(
+          `Appointment: ${new Date(invoice.appointment.appointmentDate).toLocaleDateString()} at ${invoice.appointment.appointmentTime}`,
+          50,
+          refY
+        );
+        refY += 20;
+      }
+      if (invoice.admission) {
+        doc.text(
+          `Admission: Bed ${invoice.admission.bedNumber} (${invoice.admission.bedType})`,
+          50,
+          refY
+        );
+      }
+
+      doc.moveDown(1);
+    }
+
+    // ============================================
+    // ITEMS TABLE
+    // ============================================
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const tableRight = 545;
+    const col1 = 250;
+    const col2 = 340;
+    const col3 = 420;
+    const col4 = 500;
+
+    // Table Header
+    const headerY = tableTop;
+    doc
+      .fillColor(primaryColor)
+      .fontSize(11)
+      .font('Helvetica-Bold')
+      .text('Description', tableLeft, headerY)
+      .text('Qty', col2, headerY)
+      .text('Unit Price', col3, headerY)
+      .text('Amount', col4, headerY);
+
+    // Header Underline
+    doc
+      .strokeColor(primaryColor)
+      .lineWidth(1)
+      .moveTo(tableLeft, doc.y + 5)
+      .lineTo(tableRight, doc.y + 5)
+      .stroke()
+      .moveDown(0.5);
+
+    // Table Rows
+    let rowY = doc.y;
+    doc.fillColor(secondaryColor).fontSize(10).font('Helvetica');
+
+    invoice.items.forEach((item, index) => {
+      // Alternating row colors
+      if (index % 2 === 0) {
+        doc
+          .fillColor(lightGray)
+          .rect(tableLeft, rowY - 2, tableRight - tableLeft, 20)
+          .fill();
+      }
+
+      doc.fillColor(secondaryColor);
+      const description = item.description.length > 30 
+        ? item.description.substring(0, 27) + '...' 
+        : item.description;
+      
+      doc.text(description, tableLeft, rowY);
+      doc.text(item.quantity.toString(), col2, rowY);
+      doc.text(`$${item.unitPrice.toFixed(2)}`, col3, rowY);
+      doc.text(`$${item.amount.toFixed(2)}`, col4, rowY);
+
+      rowY = doc.y;
+    });
+
+    doc.moveDown(0.5);
+
+    // Table Bottom Line
+    doc
+      .strokeColor(primaryColor)
+      .lineWidth(1)
+      .moveTo(tableLeft, doc.y)
+      .lineTo(tableRight, doc.y)
+      .stroke()
+      .moveDown(0.5);
+
+    // ============================================
+    // TOTALS (Right Aligned)
+    // ============================================
+    const totalX = 380;
+    const totalsStartY = doc.y + 10;
+
+    doc
+      .fontSize(10)
+      .font('Helvetica')
+      .text('Subtotal:', totalX, totalsStartY)
+      .text(`$${invoice.subtotal.toFixed(2)}`, 470, totalsStartY);
+
+    let yPos = totalsStartY + 20;
+
+    if (invoice.discount > 0) {
+      doc
+        .text('Discount:', totalX, yPos)
+        .text(`-$${invoice.discount.toFixed(2)}`, 470, yPos);
+      yPos += 20;
+    }
+
+    if (invoice.tax > 0) {
+      doc
+        .text('Tax:', totalX, yPos)
+        .text(`$${invoice.tax.toFixed(2)}`, 470, yPos);
+      yPos += 20;
+    }
+
+    // Total Amount
+    yPos += 10;
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .fillColor(primaryColor)
+      .text('Total:', totalX, yPos)
+      .text(`$${invoice.totalAmount.toFixed(2)}`, 470, yPos);
+
+    yPos += 30;
+
+    // Payment Details
+    doc
+      .fontSize(10)
+      .font('Helvetica')
+      .fillColor(secondaryColor)
+      .text('Paid Amount:', totalX, yPos)
+      .text(`$${invoice.paidAmount.toFixed(2)}`, 470, yPos);
+
+    yPos += 20;
+
+    const dueAmount = invoice.totalAmount - invoice.paidAmount;
+    doc
+      .fontSize(12)
+      .font('Helvetica-Bold')
+      .fillColor(dueAmount > 0 ? '#dc2626' : '#16a34a')
+      .text('Due Amount:', totalX, yPos)
+      .text(`$${dueAmount.toFixed(2)}`, 470, yPos);
+
+    doc.moveDown(2);
+
+    // ============================================
+    // NOTES
+    // ============================================
+    if (invoice.notes) {
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .text('Notes:', 50, doc.y)
+        .font('Helvetica')
+        .text(invoice.notes, 50, doc.y + 5);
+      doc.moveDown(1);
+    }
+
+    // ============================================
+    // PAYMENT STATUS
+    // ============================================
+    const statusColor = invoice.paymentStatus === 'paid' ? '#16a34a' :
+                       invoice.paymentStatus === 'partially_paid' ? '#eab308' :
+                       '#dc2626';
+
+    doc
+      .fillColor(statusColor)
+      .fontSize(12)
+      .font('Helvetica-Bold')
+      .text(`Payment Status: ${invoice.paymentStatus.toUpperCase()}`, 50, doc.y, {
+        align: 'center',
+      })
+      .moveDown(1);
+
+    if (invoice.paymentMethod) {
+      doc
+        .fillColor(secondaryColor)
+        .fontSize(10)
+        .font('Helvetica')
+        .text(`Payment Method: ${invoice.paymentMethod.toUpperCase()}`, 50, doc.y, {
+          align: 'center',
+        })
+        .moveDown(1);
+    }
+
+    // ============================================
+    // FOOTER
+    // ============================================
+    doc
+      .fillColor(darkGray)
+      .fontSize(9)
+      .font('Helvetica')
+      .text(
+        'Thank you for choosing our hospital services. For any queries, please contact our billing department.',
+        50,
+        730,
+        { align: 'center' }
+      )
+      .text(
+        `Generated on: ${new Date().toLocaleString()}`,
+        50,
+        750,
+        { align: 'center' }
+      );
+
+    // ============================================
+    // FINALIZE PDF
+    // ============================================
+    doc.end();
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate invoice PDF',
+      error: error.message,
     });
   }
 };

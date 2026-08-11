@@ -418,7 +418,7 @@ export const createStaffAccount = async (req, res) => {
     }
 
     // Allowed staff roles (excludes admin and patient)
-    const allowedStaffRoles = ['doctor', 'nurse', 'receptionist', 'laboratorist'];
+    const allowedStaffRoles = ['doctor', 'nurse', 'receptionist', 'laboratorist','accountant'];
     
     // Validate role is allowed for staff creation
     if (!allowedStaffRoles.includes(role)) {

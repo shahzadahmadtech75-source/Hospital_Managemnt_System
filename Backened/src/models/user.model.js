@@ -60,7 +60,7 @@ profileImagePublicId: {
       type: String,
       required: [true, 'User role is required'],
       enum: {
-        values: ['admin', 'doctor', 'patient', 'nurse', 'receptionist', 'laboratorist'],
+        values: ['admin', 'doctor', 'patient', 'nurse', 'receptionist', 'laboratorist','accountant'],
         message: 'Role must be one of: admin, doctor, patient, nurse, receptionist, laboratorist',
       },
       index: true,

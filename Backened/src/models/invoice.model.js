@@ -212,7 +212,7 @@ invoiceSchema.pre('validate', function(next) {
     this.invoiceNumber = `INV-${year}${month}${day}-${random}`;
   }
 
-  next();
+  next;
 });
 
 
