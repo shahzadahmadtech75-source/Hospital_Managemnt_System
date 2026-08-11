@@ -3,10 +3,14 @@ import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
 import { createAdmin , 
   createStaffAccount,
-  getAllUsers,
-  getUserById,
   activateUser,
-  deactivateUser
+  deactivateUser,
+  getDashboardStats,
+  createDepartment,
+  getDepartments,
+  updateDepartment,
+  deleteDepartment,
+  getStaff,getStaffProfile
  } from '../controllers/admin.controller.js';
 import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 
@@ -26,29 +30,7 @@ router.get('/test', (req, res) => {
 // Only enable in development  
 router.post('/create-admin', createAdmin);
   
-//get single user by id
-router.get(
-  '/users/:id',
-  authenticate,
-  authorize('admin'),
-  getUserById
-);
 
-// Admin-only routes
-router.get(
-  '/all-users',
-  authenticate,
-  authorize('admin'),
-  (req, res) => {
-    res.json({
-      success: true,
-      message: 'Admin users list',
-      data: {
-        users: []
-      }
-    });
-  }
-);
 
 // Protected admin routes
 router.post(
@@ -60,13 +42,6 @@ router.post(
   createStaffAccount
 );
 
-//get all users
-router.get(
-  '/users',
-  authenticate,
-  authorize('admin'),
-  getAllUsers
-);
 
 //activate user
 router.patch(
@@ -84,23 +59,57 @@ router.patch(
   deactivateUser
 );
 
-// Example admin dashboard route (for testing)
+// Dashboard routes
 router.get(
   '/dashboard',
   authenticate,
   authorize('admin'),
-  (req, res) => {
-    res.json({
-      success: true,
-      message: 'Admin dashboard',
-      data: {
-        user: req.user,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
+  getDashboardStats
 );
 
+// Department routes
+router.post(
+  '/departments',
+  authenticate,
+  authorize('admin'),
+  uploadProfileImage,
+  createDepartment
+);
 
+router.get(
+  '/departments',
+  authenticate,
+  authorize('admin'),
+  getDepartments
+);
 
+router.patch(
+  '/departments/:id',
+  authenticate,
+  authorize('admin'),
+  uploadProfileImage,
+  updateDepartment
+);
+
+router.delete(
+  '/departments/:id',
+  authenticate,
+  authorize('admin'),
+  deleteDepartment
+);
+
+// Staff routes
+router.get(
+  '/staff',
+  authenticate,
+  authorize('admin'),
+  getStaff
+);
+
+router.get(
+  '/staff/:id',
+  authenticate,
+  authorize('admin'),
+  getStaffProfile
+);
 export default router;

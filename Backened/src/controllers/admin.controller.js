@@ -2,6 +2,15 @@ import User from '../models/user.model.js';
 import bcrypt from 'bcrypt';
 import cloudinary from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
+import Invoice from '../models/invoice.model.js';
+import Prescription from '../models/prescription.model.js';
+import Report from '../models/report.models.js';
+import Department from '../models/department.model.js';
+import DoctorProfile from '../models/doctorProfile.model.js';
+import PatientProfile from '../models/patientProfile.model.js';
+import NurseProfile from '../models/nurseProfile.model.js';
+import AccountantProfile from '../models/accountantProfile.model.js';
+import ReceptionistProfile from '../models/receptionistProfile.model.js';
 
 
 /*
@@ -112,127 +121,8 @@ export const createAdmin = async (req, res,next) => {
   next()
 };
 
-/**
- * Get all users with optional role filtering
- * GET /api/v1/admin/users
- */
-export const getAllUsers = async (req, res) => {
-  try {
-    // Build filter object
-    const filter = {};
-    
-    // Check for role filter
-    if (req.query.role) {
-      const { role } = req.query;
-      
-      // Validate role against enum
-      const allowedRoles = ['admin', 'doctor', 'patient', 'nurse', 'receptionist', 'laboratorist'];
-      if (!allowedRoles.includes(role)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`,
-          data: null,
-        });
-      }
-      
-      filter.role = role;
-    }
-
-    // Get users with filter, excluding sensitive fields
-    const users = await User.find(filter)
-      .select('-password -refreshToken -passwordChangedAt -__v')
-      .sort({ createdAt: -1 }); // Newest first
-
-    // Prepare safe user data
-    const userResponses = users.map((user) => ({
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      isEmailVerified: user.isEmailVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    }));
-
-    return res.status(200).json({
-      success: true,
-      message: 'Users retrieved successfully',
-      data: {
-        count: userResponses.length,
-        users: userResponses,
-      },
-    });
-
-  } catch (error) {
-    console.error('Get all users error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An internal server error occurred',
-      data: null,
-    });
-  }
-};
-
-/**
- * Get single user by ID
- * GET /api/v1/admin/users/:id
- */
-export const getUserById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Validate MongoDB ID format
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid user ID format',
-        data: null,
-      });
-    }
-
-    // Find user by ID, excluding sensitive fields
-    const user = await User.findById(id)
-      .select('-password -refreshToken -passwordChangedAt -__v');
-
-    // Check if user exists
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-        data: null,
-      });
-    }
-
-    // Prepare safe user data
-    const userResponse = {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      isEmailVerified: user.isEmailVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-
-    return res.status(200).json({
-      success: true,
-      message: 'User retrieved successfully',
-      data: userResponse,
-    });
-
-  } catch (error) {
-    console.error('Get user by ID error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An internal server error occurred',
-      data: null,
-    });
-  }
-};
-
-/**
- * Activate a user account
- * PATCH /api/v1/admin/users/:id/activate
+/*
+* Activate a user account
  */
 export const activateUser = async (req, res) => {
   try {
@@ -257,6 +147,16 @@ export const activateUser = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found',
+        data: null,
+      });
+    }
+
+    // Check if user is a staff member
+    const allowedStaffRoles = ['doctor', 'nurse', 'receptionist', 'accountant'];
+    if (!allowedStaffRoles.includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin can only manage staff accounts',
         data: null,
       });
     }
@@ -319,7 +219,7 @@ export const deactivateUser = async (req, res) => {
     }
 
     // Prevent admin from deactivating their own account
-     if (id.toString() === adminId.toString()) {
+    if (id.toString() === adminId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'You cannot deactivate your own account',
@@ -336,6 +236,16 @@ export const deactivateUser = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found',
+        data: null,
+      });
+    }
+
+    // Check if user is a staff member
+    const allowedStaffRoles = ['doctor', 'nurse', 'receptionist', 'accountant'];
+    if (!allowedStaffRoles.includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin can only manage staff accounts',
         data: null,
       });
     }
@@ -533,3 +443,384 @@ const profileImageUrl = req.file
     });
   }
 }
+
+// Get dashboard statistics
+export const getDashboardStats = async (req, res) => {
+  try {
+    // Count users by role
+    const [doctors, patients, nurses, receptionists, accountants] = await Promise.all([
+      User.countDocuments({ role: 'doctor' }),
+      User.countDocuments({ role: 'patient' }),
+      User.countDocuments({ role: 'nurse' }),
+      User.countDocuments({ role: 'receptionist' }),
+      User.countDocuments({ role: 'accountant' }),
+    ]);
+
+    // Count invoices
+    const invoices = await Invoice.countDocuments();
+
+    // Count prescriptions
+    const prescriptions = await Prescription.countDocuments();
+
+    // Count reports by type
+    const [reports, operations, births, deaths] = await Promise.all([
+      Report.countDocuments(),
+      Report.countDocuments({ type: 'operation' }),
+      Report.countDocuments({ type: 'birth' }),
+      Report.countDocuments({ type: 'death' }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        doctors,
+        patients,
+        nurses,
+        receptionists,
+        accountants,
+        invoices,
+        prescriptions,
+        reports,
+        operations,
+        births,
+        deaths,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Create department
+export const createDepartment = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department name is required',
+      });
+    }
+
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department description is required',
+      });
+    }
+
+    // Check if department name already exists
+    const existingDepartment = await Department.findOne({ name });
+    if (existingDepartment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department with this name already exists',
+      });
+    }
+
+    // Handle image upload if provided
+    let imageUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      imageUrl = result;
+    }
+
+    // Create department
+    const department = await Department.create({
+      name: name.trim(),
+      description: description.trim(),
+      image: imageUrl,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Department created successfully',
+      data: department,
+    });
+  } catch (error) {
+    console.error('Error creating department:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create department',
+      error: error.message,
+    });
+  }
+};
+
+// Get all departments
+export const getDepartments = async (req, res) => {
+  try {
+    const departments = await Department.find().sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: departments.length,
+      data: departments,
+    });
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch departments',
+      error: error.message,
+    });
+  }
+};
+
+
+// Update department
+export const updateDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    // Find department
+    const department = await Department.findById(id);
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        message: 'Department not found',
+      });
+    }
+
+    // Check name uniqueness if name is being changed
+    if (name && name !== department.name) {
+      const existingDepartment = await Department.findOne({
+        name,
+        _id: { $ne: id },
+      });
+      if (existingDepartment) {
+        return res.status(400).json({
+          success: false,
+          message: 'Department with this name already exists',
+        });
+      }
+      department.name = name.trim();
+    }
+
+    // Update description if provided
+    if (description) {
+      department.description = description.trim();
+    }
+
+    // Handle image upload if provided
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      department.image = result;
+    }
+
+    await department.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Department updated successfully',
+      data: department,
+    });
+  } catch (error) {
+    console.error('Error updating department:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid department ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update department',
+      error: error.message,
+    });
+  }
+};
+
+// Delete department - Check both ways
+export const deleteDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find department
+    const department = await Department.findById(id);
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        message: 'Department not found',
+      });
+    }
+
+    // Check if any doctors are assigned to this department (by name)
+    const doctorsInDepartment = await DoctorProfile.findOne({
+      department: department.name,
+    });
+
+    if (doctorsInDepartment) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot delete department "${department.name}". It is currently assigned to one or more doctors.`,
+        assignedDoctors: await DoctorProfile.countDocuments({ department: department.name }),
+      });
+    }
+
+    // Delete the department
+    await department.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Department deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting department:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid department ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete department',
+      error: error.message,
+    });
+  }
+};
+
+// Get all staff (doctors, nurses, receptionists, accountants)
+export const getStaff = async (req, res) => {
+  try {
+    const staffRoles = ['doctor', 'nurse', 'receptionist', 'accountant'];
+
+    const staff = await User.find({ role: { $in: staffRoles } })
+      .select('-password -refreshToken -passwordChangedAt')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: staff.length,
+      data: staff,
+    });
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch staff',
+      error: error.message,
+    });
+  }
+};
+
+
+// Get staff profile by ID
+export const getStaffProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find user
+    const user = await User.findById(id).select('-password -refreshToken -passwordChangedAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Staff member not found',
+      });
+    }
+
+    // Check if user has a staff role
+    const staffRoles = ['doctor', 'nurse', 'receptionist', 'accountant'];
+    if (!staffRoles.includes(user.role)) {
+      return res.status(400).json({
+        success: false,
+        message: `User with role "${user.role}" is not a staff member`,
+      });
+    }
+
+    // Find corresponding profile based on role
+    let profile = null;
+    let isProfileCompleted = false;
+
+    switch (user.role) {
+      case 'doctor':
+        profile = await DoctorProfile.findOne({ user: user._id });
+        break;
+      case 'nurse':
+        profile = await NurseProfile.findOne({ user: user._id });
+        break;
+      case 'receptionist':
+        profile = await ReceptionistProfile.findOne({ user: user._id });
+        break;
+      case 'accountant':
+        profile = await AccountantProfile.findOne({ user: user._id });
+        break;
+      default:
+        break;
+    }
+
+    if (profile) {
+      isProfileCompleted = true;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          profileImage: user.profileImage,
+        },
+        profile: profile,
+        isProfileCompleted: isProfileCompleted,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching staff profile:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid staff ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch staff profile',
+      error: error.message,
+    });
+  }
+};

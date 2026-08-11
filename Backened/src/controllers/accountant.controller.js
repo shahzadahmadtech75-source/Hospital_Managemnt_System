@@ -3,6 +3,9 @@ import PatientProfile from '../models/patientProfile.model.js';
 import DoctorProfile from '../models/doctorProfile.model.js';
 import Appointment from '../models/appointment.model.js';
 import Admission from '../models/admission.models.js';
+import User from '../models/user.model.js';
+import AccountantProfile from '../models/accountantProfile.model.js';
+import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
 // Create invoice
 export const createInvoice = async (req, res) => {
@@ -750,6 +753,302 @@ export const updateInvoice = async (req, res) => {
       success: false,
       message: 'Failed to update invoice',
       error: error.message,
+    });
+  }
+};
+
+// Delete invoice
+export const deleteInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find invoice
+    const invoice = await Invoice.findById(id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
+    }
+
+    // Delete the invoice
+    await invoice.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Invoice deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting invoice:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid invoice ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete invoice',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Get accountant profile
+export const getAccountantProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+
+    // Get user
+    const user = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Find accountant profile
+    const profile = await AccountantProfile.findOne({ user: userId });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          profileImage: user.profileImage,
+        },
+        profile: profile,
+        isProfileCompleted: profile ? true : false,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching accountant profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch accountant profile',
+      error: error.message,
+    });
+  }
+};
+
+// Create or update accountant profile
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { fullName, phone, address } = req.body;
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Handle profile image upload if provided
+    let profileImageUrl = null;
+    if (req.file) {
+      const result = await uploadToCloudinary(req.file.buffer);
+      profileImageUrl = result;
+    }
+
+    // Find or create accountant profile
+    let profile = await AccountantProfile.findOne({ user: userId });
+
+    if (!profile) {
+      // Create new profile
+      profile = new AccountantProfile({
+        user: userId,
+        fullName: fullName || '',
+        phone: phone || null,
+        address: address || null,
+        profileImage: profileImageUrl,
+      });
+    } else {
+      // Update existing profile
+      if (fullName) profile.fullName = fullName;
+      if (phone !== undefined) profile.phone = phone || null;
+      if (address !== undefined) profile.address = address || null;
+      if (profileImageUrl) profile.profileImage = profileImageUrl;
+    }
+
+    await profile.save();
+
+    // Update user profileImage if image was uploaded
+    if (profileImageUrl) {
+      user.profileImage = profileImageUrl;
+      await user.save();
+    }
+
+    // Get updated user with safe fields
+    const updatedUser = await User.findById(userId).select('-password -refreshToken -passwordChangedAt');
+
+    res.status(200).json({
+      success: true,
+      message: profile.isNew ? 'Accountant profile created successfully' : 'Accountant profile updated successfully',
+      data: {
+        user: {
+          _id: updatedUser._id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          profileImage: updatedUser.profileImage,
+        },
+        profile: profile,
+        isProfileCompleted: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error upserting accountant profile:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save accountant profile',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Change accountant password
+export const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Validate required fields
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirm password is required'
+      });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match'
+      });
+    }
+
+    // Check if new password is same as current password
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // Find user with password field included
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    
+    // Update passwordChangedAt if the model has this field
+    if (user.schema.path('passwordChangedAt')) {
+      user.passwordChangedAt = new Date();
+    }
+
+    // Invalidate refresh token
+    user.refreshToken = null;
+
+    // Save with validation only for modified fields
+    await user.save({ validateModifiedOnly: true });
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please login again with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Password validation failed',
+        errors: errors,
+        requirements: {
+          minLength: 8,
+          uppercase: 'At least one uppercase letter (A-Z)',
+          lowercase: 'At least one lowercase letter (a-z)',
+          number: 'At least one number (0-9)',
+          specialChar: 'At least one special character (@$!%*?&)'
+        }
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
     });
   }
 };

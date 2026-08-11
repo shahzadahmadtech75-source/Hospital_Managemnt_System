@@ -6,10 +6,15 @@ import { createInvoice,
   getPatientAdmissions,
   getInvoices,
   getInvoice,
-  updateInvoice
+  updateInvoice,
+  deleteInvoice,
+  getAccountantProfile,
+  updateProfile,
+  changePassword
  } from '../controllers/accountant.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js'
+import {uploadProfileImage, handleUploadError } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -40,6 +45,13 @@ router.patch(
   authenticate,
   authorize('accountant'),
   updateInvoice
+);
+//dleete invoice
+router.delete(
+  '/invoices/:id',
+  authenticate,
+  authorize('accountant'),
+  deleteInvoice
 );
 
 // Patient routes
@@ -72,7 +84,30 @@ router.get(
   getDoctors
 );
 
+// Profile routes
+router.get(
+  '/profile',
+  authenticate,
+  authorize('accountant'),
+  getAccountantProfile
+);
 
+router.patch(
+  '/profile',
+  authenticate,
+  authorize('accountant'),
+  uploadProfileImage,
+  handleUploadError,
+  updateProfile
+);
+
+// Change password route
+router.patch(
+  '/change-password',
+  authenticate,
+  authorize('accountant'),
+  changePassword
+);
 
 
 export default router;
