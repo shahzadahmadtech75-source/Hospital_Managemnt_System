@@ -11,6 +11,7 @@ import appointmentRoutes from './routes/appointment.routes.js';
 import doctorProfileRoutes from './routes/doctorProfile.routes.js';
 import nurseRoutes from './routes/nurse.routes.js';
 import accountantRoutes from './routes/accountant.routes.js'
+import publicRoutes from './routes/public.routes.js';
 
 
 
@@ -32,6 +33,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 
+
+app.use('/api/v1/public', publicRoutes);
 
 // API routes
 app.use('/api/v1/auth', authRoutes);

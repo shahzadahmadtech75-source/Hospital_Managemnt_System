@@ -12,7 +12,7 @@ import NurseProfile from '../models/nurseProfile.model.js';
 import AccountantProfile from '../models/accountantProfile.model.js';
 import ReceptionistProfile from '../models/receptionistProfile.model.js';
 import Admission from '../models/admission.models.js';
-
+import Notice from '../models/notice.model.js';
 
 /*
  * Create admin account (Temporary - Development Only)
@@ -1608,6 +1608,489 @@ export const getMonitorReport = async (req, res) => {
       success: false,
       message: 'Failed to fetch report',
       error: error.message,
+    });
+  }
+};
+
+// Create notice
+export const createNotice = async (req, res) => {
+  try {
+    const { title, description, startDate, endDate } = req.body;
+
+    // Validate required fields
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title is required',
+      });
+    }
+
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Description is required',
+      });
+    }
+
+    if (!startDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date is required',
+      });
+    }
+
+    if (!endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date is required',
+      });
+    }
+
+    // Validate that endDate is not earlier than startDate
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end < start) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be on or after the start date',
+      });
+    }
+
+    // Create notice
+    const notice = await Notice.create({
+      title: title.trim(),
+      description: description.trim(),
+      startDate: start,
+      endDate: end,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Notice created successfully',
+      data: notice,
+    });
+  } catch (error) {
+    console.error('Error creating notice:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create notice',
+      error: error.message,
+    });
+  }
+};
+
+// Get all notices
+export const getNotices = async (req, res) => {
+  try {
+    const notices = await Notice.find().sort({ startDate: -1, createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: notices.length,
+      data: notices,
+    });
+  } catch (error) {
+    console.error('Error fetching notices:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notices',
+      error: error.message,
+    });
+  }
+};
+
+// Update notice
+export const updateNotice = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, startDate, endDate } = req.body;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid notice ID format',
+      });
+    }
+
+    // Find notice
+    const notice = await Notice.findById(id);
+    if (!notice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notice not found',
+      });
+    }
+
+    // Update fields if provided
+    if (title) {
+      notice.title = title.trim();
+    }
+
+    if (description) {
+      notice.description = description.trim();
+    }
+
+    // Handle date validation
+    let newStartDate = notice.startDate;
+    let newEndDate = notice.endDate;
+
+    if (startDate) {
+      newStartDate = new Date(startDate);
+    }
+
+    if (endDate) {
+      newEndDate = new Date(endDate);
+    }
+
+    // Validate that endDate is not earlier than startDate
+    if (newEndDate < newStartDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be on or after the start date',
+      });
+    }
+
+    // Update dates if provided
+    if (startDate) {
+      notice.startDate = newStartDate;
+    }
+
+    if (endDate) {
+      notice.endDate = newEndDate;
+    }
+
+    await notice.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Notice updated successfully',
+      data: notice,
+    });
+  } catch (error) {
+    console.error('Error updating notice:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid notice ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update notice',
+      error: error.message,
+    });
+  }
+};
+
+// Delete notice
+export const deleteNotice = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ID format
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid notice ID format',
+      });
+    }
+
+    // Find notice
+    const notice = await Notice.findById(id);
+    if (!notice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notice not found',
+      });
+    }
+
+    // Delete the notice
+    await notice.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Notice deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting notice:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid notice ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete notice',
+      error: error.message,
+    });
+  }
+};
+
+// Update admin profile
+export const updateAdminProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { fullName, email } = req.body;
+
+    // Validate at least one field is provided
+    if (!fullName && !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one field (fullName or email) must be provided',
+      });
+    }
+
+    // Find user and verify role
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Verify user is admin
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. User is not an admin',
+      });
+    }
+
+    // Update fullName if provided
+    if (fullName) {
+      user.fullName = fullName.trim();
+    }
+
+    // Update email if provided
+    if (email) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid email address',
+        });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Check if email is already used by another user
+      if (normalizedEmail !== user.email) {
+        const existingUser = await User.findOne({
+          email: normalizedEmail,
+          _id: { $ne: userId },
+        });
+
+        if (existingUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'Email is already in use by another user',
+          });
+        }
+
+        user.email = normalizedEmail;
+      }
+    }
+
+    // Save with validation only for modified fields
+    await user.save({ validateModifiedOnly: true });
+
+    // Return safe admin information
+    const safeUser = {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      profileImage: user.profileImage,
+      isActive: user.isActive,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin profile updated successfully',
+      data: safeUser,
+    });
+  } catch (error) {
+    console.error('Error updating admin profile:', error);
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update admin profile',
+      error: error.message,
+    });
+  }
+};
+
+
+
+// Change admin password
+export const changeAdminPassword = async (req, res) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User ID not found in token'
+      });
+    }
+
+    // Validate required fields
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required'
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Confirm password is required'
+      });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirm password do not match'
+      });
+    }
+
+    // Check if new password is same as current password
+    if (newPassword === currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // Find user with password field included
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify user is admin
+    if (user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. User is not an admin'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    
+    // Update passwordChangedAt if the model has this field
+    if (user.schema.path('passwordChangedAt')) {
+      user.passwordChangedAt = new Date();
+    }
+
+    // Invalidate refresh token
+    user.refreshToken = null;
+
+    // Save with validation only for modified fields
+    await user.save({ validateModifiedOnly: true });
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully. Please login again with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Change admin password error:', error);
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Password validation failed',
+        errors: errors,
+        requirements: {
+          minLength: 8,
+          uppercase: 'At least one uppercase letter (A-Z)',
+          lowercase: 'At least one lowercase letter (a-z)',
+          number: 'At least one number (0-9)',
+          specialChar: 'At least one special character (@$!%*?&)'
+        }
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
     });
   }
 };

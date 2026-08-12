@@ -20,7 +20,13 @@ import { createAdmin ,
   getMonitorInvoice,
   getMonitorBedAllotments,
   getMonitorReports,
-  getMonitorReport
+  getMonitorReport,
+  createNotice,
+  getNotices,
+  updateNotice,
+  deleteNotice,
+  updateAdminProfile,
+  changeAdminPassword
  } from '../controllers/admin.controller.js';
 import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
 
@@ -195,5 +201,48 @@ router.get(
   authenticate,
   authorize('admin'),
   getMonitorReport
+);
+
+router.post(
+  '/notices',
+  authenticate,
+  authorize('admin'),
+  createNotice
+);
+
+router.get(
+  '/notices',
+  authenticate,
+  authorize('admin'),
+  getNotices
+);
+
+router.patch(
+  '/notices/:id',
+  authenticate,
+  authorize('admin'),
+  updateNotice
+);
+
+router.delete(
+  '/notices/:id',
+  authenticate,
+  authorize('admin'),
+  deleteNotice
+);
+
+// Profile routes
+router.patch(
+  '/profile',
+  authenticate,
+  authorize('admin'),
+  updateAdminProfile
+);
+
+router.patch(
+  '/change-password',
+  authenticate,
+  authorize('admin'),
+  changeAdminPassword
 );
 export default router;
