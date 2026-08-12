@@ -10,6 +10,76 @@ import Operation from '../models/operation.model.js';
 import Invoice from '../models/invoice.model.js';
 import { uploadToCloudinary } from '../utils/uploadOnCloudinary.js';
 
+
+// Cancel appointment by patient
+export const cancelAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId || req.user.id;
+
+    // Find patient profile
+    const patientProfile = await PatientProfile.findOne({ user: userId });
+    if (!patientProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient profile not found',
+      });
+    }
+
+    // Find appointment and verify it belongs to the patient
+    const appointment = await Appointment.findOne({
+      _id: id,
+      patient: patientProfile._id,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found or you are not authorized to cancel it',
+      });
+    }
+
+    // Check if appointment can be cancelled
+    const nonCancellableStatuses = ['completed', 'cancelled'];
+    if (nonCancellableStatuses.includes(appointment.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel appointment with status: ${appointment.status}`,
+      });
+    }
+
+    // Update appointment status to cancelled
+    appointment.status = 'cancelled';
+    await appointment.save();
+
+    // Populate response
+    const updatedAppointment = await Appointment.findById(appointment._id)
+      .populate('patient', 'fullName phone profileImage')
+      .populate('doctor', 'fullName specialization');
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment cancelled successfully',
+      data: updatedAppointment,
+    });
+  } catch (error) {
+    console.error('Error cancelling appointment:', error);
+
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid appointment ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cancel appointment',
+      error: error.message,
+    });
+  }
+};
 /**
  * Get authenticated user's patient profile
  * GET /api/v1/patient/profile
@@ -128,13 +198,25 @@ export const updatePatientProfile = async (req, res) => {
     // ============================================
     // Update User Model (for profile image)
     // ============================================
-    if (profileImageUrl) {
-      await User.findByIdAndUpdate(
-        userId,
-        { $set: { profileImage: profileImageUrl } },
-        { new: true }
-      );
-    }
+   if (profileImageUrl) {
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: { profileImage: profileImageUrl } },
+    { new: true, runValidators: true }
+  );
+  
+  // ✅ Check if user was actually updated
+  if (!updatedUser) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found to update profile image'
+    });
+  }
+  
+  // ✅ Log to verify
+  console.log('✅ User profile image updated:', updatedUser._id);
+  console.log('✅ New image URL:', updatedUser.profileImage);
+}
     
     // ============================================
     // Update PatientProfile

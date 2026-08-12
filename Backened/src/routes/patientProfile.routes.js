@@ -6,6 +6,7 @@ import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
 import { getPatientAppointments } from '../controllers/appointment.controller.js';
 import { getPatientPrescriptionById,changePassword, getPatientInvoices, getPatientOperations, getDoctorProfileById, getPatientPrescriptions ,getPatientDoctors ,getPatientAdmissions,
+  cancelAppointment,
   downloadInvoicePDF
  } from '../controllers/patientProfile.controller.js';
 import { handleUploadError, uploadProfileImage } from '../middlewares/upload.middleware.js';
@@ -34,6 +35,14 @@ router.get(
   authenticate,
   authorize('patient'),
   getPatientAppointments
+);
+
+
+router.patch(
+  '/appointments/:id/cancel',
+  authenticate,
+  authorize('patient'),
+  cancelAppointment
 );
 
 // GET /api/v1/patient/prescriptions (NEW)

@@ -91,6 +91,7 @@ const profileImageUrl = req.file
 
     // 7. Save Document to Database
     const user = new User({
+      fullName:fullName,
       email: normalizedEmail,
       username: cleanUsername,
       password, // Automatically hashed by your pre-save middleware
