@@ -10,7 +10,8 @@ import { createInvoice,
   deleteInvoice,
   getAccountantProfile,
   updateProfile,
-  changePassword
+  changePassword,
+  updatePaymentStatus
  } from '../controllers/accountant.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js'
@@ -45,6 +46,14 @@ router.patch(
   authenticate,
   authorize('accountant'),
   updateInvoice
+);
+
+// Payment status route (separate)
+router.patch(
+  '/invoices/:id/payment-status',
+  authenticate,
+  authorize('accountant'),
+  updatePaymentStatus
 );
 //dleete invoice
 router.delete(

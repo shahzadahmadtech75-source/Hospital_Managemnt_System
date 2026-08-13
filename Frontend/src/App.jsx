@@ -17,7 +17,11 @@ import RegisterPage from './pages/auth/RegisterPage'
 import UnauthorizedPage from './pages/auth/UnauthorizedPage';
 
 // Placeholder for protected routes
-import DashboardPlaceholder from './pages/dashboard/DashboardPlaceholder';
+import PatientDashboard from './pages/patient/PatientDashboard';
+import DoctorDashboard from './pages/doctor/DoctorDashboard';
+import NurseDashboard from './pages/nurse/NurseDashboard';
+import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard';
+import AccountantDashboard from './pages/accountant/AccountantDashboard';
 
 function App() {
   return (
@@ -40,10 +44,24 @@ function App() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
           {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPlaceholder />} />
-          </Route>
-          
+          {/* Protected Routes - Patient */}
+<Route element={<ProtectedRoute allowedRoles={['patient']} />}>
+  <Route path="/patient/dashboard" element={<PatientDashboard />} />
+</Route>
+
+{/* Protected Routes - Doctor */}
+<Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
+  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+</Route>        
+<Route element={<ProtectedRoute allowedRoles={['nurse']} />}>
+  <Route path="/nurse/dashboard" element={<NurseDashboard/>} />
+</Route>        
+<Route element={<ProtectedRoute allowedRoles={['receptionist']} />}>
+  <Route path="/receptionist/dashboard" element={<ReceptionistDashboard/>} />
+</Route>        
+<Route element={<ProtectedRoute allowedRoles={['accountant']} />}>
+  <Route path="/accountant/dashboard" element={<AccountantDashboard/>} />
+</Route>        
           {/* 404 Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

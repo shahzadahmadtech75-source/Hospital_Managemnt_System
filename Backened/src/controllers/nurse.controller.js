@@ -1372,7 +1372,14 @@ export const updateNurseProfile = async (req, res) => {
         message: 'User not found',
       });
     }
-
+    if (!user.username && user.email) {
+  user.username = user.email.split('@')[0];
+  // Check uniqueness and add suffix if needed
+  const existing = await User.findOne({ username: user.username, _id: { $ne: userId } });
+  if (existing) {
+    user.username = `${user.username}${Date.now().toString().slice(-4)}`;
+  }
+}
     // Handle profile image upload if provided
     let profileImageUrl = null;
     if (req.file) {

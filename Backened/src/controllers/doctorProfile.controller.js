@@ -1040,8 +1040,6 @@ export const deletePrescription = async (req, res) => {
 
 export const getMyPatients = async (req, res) => {
   try {
-    // 1. Get authenticated doctor's profile
-    console.log(req.user)
     const doctor = await DoctorProfile.findOne({ user: req.user.id });
     
     if (!doctor) {
@@ -1051,45 +1049,47 @@ export const getMyPatients = async (req, res) => {
       });
     }
 
-    // 2. Find patients who have appointments with this doctor
     const appointments = await Appointment.find({
       doctor: doctor._id,
-      status: { $ne: 'rejected' } // Exclude rejected appointments
+      status: { $ne: 'rejected' }
     }).populate({
       path: 'patient',
+      // ✅ Populate patient profile data
       populate: {
         path: 'user',
-        select: '-password -refreshToken' // Exclude sensitive data
+        select: '-password -refreshToken'
       }
     });
 
-    // 3. Extract unique patients
     const patientMap = new Map();
     
     appointments.forEach(appointment => {
-      if (appointment.patient && appointment.patient.user) {
+      if (appointment.patient) {
         const patientId = appointment.patient._id.toString();
         
         if (!patientMap.has(patientId)) {
+          // ✅ Get fullName from PatientProfile OR User
+          const patientData = appointment.patient;
+          const userData = patientData.user || {};
+          
           patientMap.set(patientId, {
-            id: appointment.patient._id,
-            fullName: appointment.patient.user.fullName,
-            phone: appointment.patient.user.phone,
-            gender: appointment.patient.gender,
-            dateOfBirth: appointment.patient.dateOfBirth,
-            bloodGroup: appointment.patient.bloodGroup,
-            address: appointment.patient.address,
-            profileImage: appointment.patient.profileImage
+            id: patientData._id,
+            // ✅ Check both places for fullName
+            fullName: patientData.fullName || userData.fullName || 'Unknown',
+            phone: patientData.phone || userData.phone || '',
+            gender: patientData.gender || '',
+            dateOfBirth: patientData.dateOfBirth || '',
+            bloodGroup: patientData.bloodGroup || '',
+            address: patientData.address || '',
+            profileImage: patientData.profileImage || userData.profileImage || null,
           });
         }
       }
     });
 
-    // 4. Convert to array and sort alphabetically by fullName
     let patients = Array.from(patientMap.values());
     patients.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-    // 5. Return response
     res.status(200).json({
       success: true,
       count: patients.length,
@@ -1416,16 +1416,21 @@ export const createReport = async (req, res) => {
     }
 
     // Populate response
-    const populatedReport = await Report.findById(report._id)
-      .populate('patient', 'fullName phone profileImage')
-      .populate('doctor', 'fullName specialization');
-
-    res.status(201).json({
-      success: true,
-      message: 'Report created successfully',
-      data: populatedReport,
-    });
-  } catch (error) {
+const populatedReport = await Report.findById(report._id)
+  .populate({
+    path: 'patient',
+    populate: {
+      path: 'user',
+      select: 'fullName email profileImage'
+    }
+  })
+  .populate({
+    path: 'doctor',
+    populate: {
+      path: 'user',
+      select: 'fullName email profileImage'
+    }
+  });  } catch (error) {
     console.error('Error creating report:', error);
     res.status(500).json({
       success: false,
@@ -1439,49 +1444,70 @@ export const createReport = async (req, res) => {
 export const getReports = async (req, res) => {
   try {
     const { type } = req.query;
-
-    // Validate type if provided
-    if (type) {
-      const validTypes = ['operation', 'birth', 'death'];
-      if (!validTypes.includes(type)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid report type. Must be operation, birth, or death',
-        });
-      }
-    }
-
-    // Get doctor profile
     const doctorProfile = await DoctorProfile.findOne({ user: req.user.id });
+    
     if (!doctorProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Doctor profile not found',
+        message: 'Doctor profile not found'
       });
     }
 
-    // Build query
     const query = { doctor: doctorProfile._id };
-    if (type) {
-      query.type = type;
-    }
+    if (type) query.type = type;
 
-    // Get reports
     const reports = await Report.find(query)
-      .populate('patient', 'fullName phone profileImage')
+      .populate({
+        path: 'patient',
+        populate: {
+          path: 'user',
+          select: 'fullName email profileImage'
+        }
+      })
+      .populate({
+        path: 'doctor',
+        populate: {
+          path: 'user',  // ✅ Populate user data for doctor
+          select: 'fullName email profileImage'
+        }
+      })
       .sort({ reportDate: -1, createdAt: -1 });
+
+    // ✅ Format response properly
+    const formattedReports = reports.map(report => ({
+      _id: report._id,
+      type: report.type,
+      description: report.description,
+      reportDate: report.reportDate,
+      pdfUrl: report.pdfUrl,
+      patient: report.patient ? {
+        _id: report.patient._id,
+        fullName: report.patient.fullName || report.patient.user?.fullName || 'Unknown',
+        phone: report.patient.phone || '',
+        profileImage: report.patient.profileImage || report.patient.user?.profileImage || null
+      } : null,
+      doctor: report.doctor ? {
+        _id: report.doctor._id,
+        fullName: report.doctor.fullName || report.doctor.user?.fullName || 'Unknown',
+        specialization: report.doctor.specialization || 'General',
+        profileImage: report.doctor.user?.profileImage || null
+      } : null,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt
+    }));
 
     res.status(200).json({
       success: true,
-      count: reports.length,
-      data: reports,
+      count: formattedReports.length,
+      data: formattedReports
     });
+
   } catch (error) {
     console.error('Error fetching reports:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch reports',
-      error: error.message,
+      error: error.message
     });
   }
 };
@@ -1938,6 +1964,26 @@ export const deleteAppointment = async (req, res) => {
       success: false,
       message: 'Failed to delete appointment',
       error: error.message,
+    });
+  }
+};
+
+// Get all patients (for doctor dropdown)
+export const getAllPatients = async (req, res) => {
+  try {
+    const patients = await PatientProfile.find()
+      .populate('user', 'fullName email profileImage')
+      .select('fullName phone');
+    
+    res.status(200).json({
+      success: true,
+      count: patients.length,
+      data: patients
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch patients'
     });
   }
 };

@@ -44,8 +44,14 @@ export const AuthProvider = ({ children }) => {
         
         // ✅ Success toast
         toast.success(`Welcome back, ${user.fullName || user.username}!`);
-        
-        return { success: true };
+         // ✅ Role-based redirect
+      let redirectPath = '/login';
+      if (user.role === 'patient') redirectPath = '/patient/dashboard';
+      else if (user.role === 'doctor') redirectPath = '/doctor/dashboard';
+      else if (user.role === 'admin') redirectPath = '/admin/dashboard';
+      else if (user.role === 'nurse') redirectPath = '/nurse/dashboard';
+      
+      return { success: true, redirectPath };
       }
       return { success: false, error: 'Login failed' };
     } catch (error) {

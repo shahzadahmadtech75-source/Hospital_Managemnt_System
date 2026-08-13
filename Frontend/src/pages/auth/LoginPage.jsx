@@ -13,12 +13,8 @@ const LoginPage = () => {
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
+  
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +22,8 @@ const LoginPage = () => {
 
     const result = await login(email, password);
     if (result.success) {
-      navigate('/dashboard');
+        // ✅ Navigate to role-based dashboard
+      navigate(result.redirectPath);
     }
     // Error toast is handled in AuthContext
     setIsLoading(false);

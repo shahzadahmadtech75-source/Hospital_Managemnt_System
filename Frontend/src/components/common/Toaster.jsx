@@ -6,7 +6,7 @@ export const Toaster = () => {
     <HotToaster
       position="top-right"
       toastOptions={{
-        duration: 4000,
+        duration: 1000,
         style: {
           background: '#fff',
           color: '#1a1a1a',

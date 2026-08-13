@@ -13,6 +13,7 @@ import {
   getDoctorPrescriptions,
   updatePrescription,
   deletePrescription,
+  getAllPatients,
   getMyPatients,
   createAdmission,
   getAdmissions,
@@ -197,5 +198,12 @@ router.delete(
   authenticate,
   authorize('doctor'),
   deleteAppointment
+);
+
+router.get(
+  '/patients/all',
+  authenticate,
+  authorize('doctor'),
+  getAllPatients
 );
 export default router;

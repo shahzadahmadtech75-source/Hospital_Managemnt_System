@@ -120,12 +120,27 @@ const Header = () => {
                 >
                   Logout
                 </button>
-                <Link
-                  to="/dashboard"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
-                >
-                  Dashboard
-                </Link>
+               <Link
+  to={
+  user?.role === 'doctor'
+    ? '/doctor/dashboard'
+    : user?.role === 'patient'
+    ? '/patient/dashboard'
+    : user?.role === 'nurse'
+    ? '/nurse/dashboard'
+    : user?.role === 'receptionist'
+    ? '/receptionist/dashboard'
+    : user?.role === 'admin'
+    ? '/admin/dashboard'
+    : user?.role === 'accountant'
+    ? '/accountant/dashboard'
+    : '/login'
+}
+   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+>
+  Dashboard
+</Link>
+
               </div>
             ) : (
               <>
@@ -197,13 +212,27 @@ const Header = () => {
                   >
                     Logout
                   </button>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
-                  >
-                    Dashboard
-                  </Link>
+                  {/* // ✅ Change to: */}
+<Link
+  to={
+  user?.role === 'doctor'
+    ? '/doctor/dashboard'
+    : user?.role === 'patient'
+    ? '/patient/dashboard'
+    : user?.role === 'nurse'
+    ? '/nurse/dashboard'
+    : user?.role === 'receptionist'
+    ? '/receptionist/dashboard'
+    : user?.role === 'admin'
+    ? '/admin/dashboard'
+    : user?.role === 'accountant'
+    ? '/accountant/dashboard'
+    : '/login'
+}
+  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+>
+  Dashboard
+</Link>
                 </>
               ) : (
                 <>

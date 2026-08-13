@@ -512,6 +512,10 @@ export const getInvoice = async (req, res) => {
 
 
 // Update invoice
+/**
+ * Update invoice (Accountant)
+ * PUT /api/v1/accountant/invoices/:id
+ */
 export const updateInvoice = async (req, res) => {
   try {
     const { id } = req.params;
@@ -533,7 +537,9 @@ export const updateInvoice = async (req, res) => {
       paymentStatus,
     } = req.body;
 
-    // Find invoice
+    // ============================================
+    // Find Invoice
+    // ============================================
     const invoice = await Invoice.findById(id);
     if (!invoice) {
       return res.status(404).json({
@@ -542,55 +548,17 @@ export const updateInvoice = async (req, res) => {
       });
     }
 
-    // Validate and update patient if provided
-    if (patient) {
-      const patientExists = await PatientProfile.findById(patient);
-      if (!patientExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Patient not found',
-        });
-      }
-      invoice.patient = patient;
-    }
+    // ============================================
+    // Update Basic Fields (if provided)
+    // ============================================
+    if (title) invoice.title = title;
+    if (issueDate) invoice.issueDate = issueDate;
+    if (dueDate !== undefined) invoice.dueDate = dueDate || null;
+    if (notes !== undefined) invoice.notes = notes || '';
 
-    // Validate and update doctor if provided
-    if (doctor) {
-      const doctorExists = await DoctorProfile.findById(doctor);
-      if (!doctorExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Doctor not found',
-        });
-      }
-      invoice.doctor = doctor;
-    }
-
-    // Validate and update appointment if provided
-    if (appointment) {
-      const appointmentExists = await Appointment.findById(appointment);
-      if (!appointmentExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Appointment not found',
-        });
-      }
-      invoice.appointment = appointment;
-    }
-
-    // Validate and update admission if provided
-    if (admission) {
-      const admissionExists = await Admission.findById(admission);
-      if (!admissionExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Admission not found',
-        });
-      }
-      invoice.admission = admission;
-    }
-
-    // Validate invoiceNumber uniqueness if changed
+    // ============================================
+    // Update Invoice Number (with uniqueness check)
+    // ============================================
     if (invoiceNumber && invoiceNumber !== invoice.invoiceNumber) {
       const existingInvoice = await Invoice.findOne({
         invoiceNumber,
@@ -605,74 +573,65 @@ export const updateInvoice = async (req, res) => {
       invoice.invoiceNumber = invoiceNumber;
     }
 
-    // Update fields if provided
-    if (title) invoice.title = title;
-    if (issueDate) invoice.issueDate = issueDate;
-    if (dueDate !== undefined) invoice.dueDate = dueDate || null;
-
-    // Validate and update discount
-    if (discount !== undefined) {
-      if (discount < 0) {
-        return res.status(400).json({
+    // ============================================
+    // Update Patient (if provided)
+    // ============================================
+    if (patient) {
+      const patientExists = await PatientProfile.findById(patient);
+      if (!patientExists) {
+        return res.status(404).json({
           success: false,
-          message: 'Discount cannot be negative',
+          message: 'Patient not found',
         });
       }
-      invoice.discount = discount;
+      invoice.patient = patient;
     }
 
-    // Validate and update tax
-    if (tax !== undefined) {
-      if (tax < 0) {
-        return res.status(400).json({
+    // ============================================
+    // Update Doctor (if provided)
+    // ============================================
+    if (doctor) {
+      const doctorExists = await DoctorProfile.findById(doctor);
+      if (!doctorExists) {
+        return res.status(404).json({
           success: false,
-          message: 'Tax cannot be negative',
+          message: 'Doctor not found',
         });
       }
-      invoice.tax = tax;
+      invoice.doctor = doctor;
     }
 
-    // Validate and update paidAmount
-    if (paidAmount !== undefined) {
-      if (paidAmount < 0) {
-        return res.status(400).json({
+    // ============================================
+    // Update Appointment (if provided)
+    // ============================================
+    if (appointment) {
+      const appointmentExists = await Appointment.findById(appointment);
+      if (!appointmentExists) {
+        return res.status(404).json({
           success: false,
-          message: 'Paid amount cannot be negative',
+          message: 'Appointment not found',
         });
       }
-      invoice.paidAmount = paidAmount;
+      invoice.appointment = appointment;
     }
 
-    // Validate and update paymentMethod
-    if (paymentMethod) {
-      const validMethods = ['cash', 'card', 'bank_transfer', 'online'];
-      if (!validMethods.includes(paymentMethod)) {
-        return res.status(400).json({
+    // ============================================
+    // Update Admission (if provided)
+    // ============================================
+    if (admission) {
+      const admissionExists = await Admission.findById(admission);
+      if (!admissionExists) {
+        return res.status(404).json({
           success: false,
-          message: 'Invalid payment method. Must be cash, card, bank_transfer, or online',
+          message: 'Admission not found',
         });
       }
-      invoice.paymentMethod = paymentMethod;
+      invoice.admission = admission;
     }
 
-    // Validate and update paymentStatus
-    if (paymentStatus) {
-      const validStatuses = ['unpaid', 'partially_paid', 'paid', 'cancelled'];
-      if (!validStatuses.includes(paymentStatus)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid payment status. Must be unpaid, partially_paid, paid, or cancelled',
-        });
-      }
-      invoice.paymentStatus = paymentStatus;
-    }
-
-    // Update notes if provided
-    if (notes !== undefined) {
-      invoice.notes = notes || '';
-    }
-
-    // Update items if provided
+    // ============================================
+    // Update Items (if provided)
+    // ============================================
     if (items) {
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({
@@ -713,10 +672,94 @@ export const updateInvoice = async (req, res) => {
       }));
     }
 
-    // Save invoice (pre-save middleware will recalculate totals)
+    // ============================================
+    // Update Financial Fields (with validation)
+    // ============================================
+    if (discount !== undefined) {
+      if (discount < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Discount cannot be negative',
+        });
+      }
+      invoice.discount = discount;
+    }
+
+    if (tax !== undefined) {
+      if (tax < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tax cannot be negative',
+        });
+      }
+      invoice.tax = tax;
+    }
+
+    if (paidAmount !== undefined) {
+      if (paidAmount < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Paid amount cannot be negative',
+        });
+      }
+      invoice.paidAmount = paidAmount;
+    }
+
+    // ============================================
+    // Update Payment Method (if provided)
+    // ============================================
+    if (paymentMethod) {
+      const validMethods = ['cash', 'card', 'bank_transfer', 'online'];
+      if (!validMethods.includes(paymentMethod)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid payment method. Must be cash, card, bank_transfer, or online',
+        });
+      }
+      invoice.paymentMethod = paymentMethod;
+    }
+
+    // ============================================
+    // Update Payment Status (if provided)
+    // ============================================
+    if (paymentStatus) {
+      const validStatuses = ['unpaid', 'partially_paid', 'paid', 'cancelled'];
+      if (!validStatuses.includes(paymentStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid payment status. Must be unpaid, partially_paid, paid, or cancelled',
+        });
+      }
+      invoice.paymentStatus = paymentStatus;
+    }
+
+    // ============================================
+    // Auto-calculate Payment Status (if paidAmount changed but status not provided)
+    // ============================================
+    if (paidAmount !== undefined && !paymentStatus) {
+      // Recalculate totals
+      const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
+      const totalAmount = Math.max(0, subtotal - invoice.discount + invoice.tax);
+      
+      // Auto-calculate status based on paidAmount
+      if (invoice.paidAmount >= totalAmount) {
+        invoice.paymentStatus = 'paid';
+      } else if (invoice.paidAmount > 0) {
+        invoice.paymentStatus = 'partially_paid';
+      } else {
+        invoice.paymentStatus = 'unpaid';
+      }
+    }
+
+    // ============================================
+    // Recalculate Totals (pre-save middleware will handle this)
+    // ============================================
+    // Save invoice (pre-save middleware will recalculate all totals)
     await invoice.save();
 
-    // Populate and return updated invoice
+    // ============================================
+    // Populate Response
+    // ============================================
     const updatedInvoice = await Invoice.findById(invoice._id)
       .populate('patient', '_id fullName phone profileImage address')
       .populate('doctor', '_id fullName department specialization phone')
@@ -728,6 +771,7 @@ export const updateInvoice = async (req, res) => {
       message: 'Invoice updated successfully',
       data: updatedInvoice,
     });
+
   } catch (error) {
     console.error('Error updating invoice:', error);
 
@@ -757,6 +801,89 @@ export const updateInvoice = async (req, res) => {
   }
 };
 
+/**
+ * Update invoice payment status only (Accountant)
+ * PATCH /api/v1/accountant/invoices/:id/payment-status
+ */
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentStatus, paidAmount } = req.body;
+
+    // Find invoice
+    const invoice = await Invoice.findById(id);
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found',
+      });
+    }
+
+    // Update paidAmount if provided
+    if (paidAmount !== undefined) {
+      if (paidAmount < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Paid amount cannot be negative',
+        });
+      }
+      invoice.paidAmount = paidAmount;
+    }
+
+    // Update payment status if provided
+    if (paymentStatus) {
+      const validStatuses = ['unpaid', 'partially_paid', 'paid', 'cancelled'];
+      if (!validStatuses.includes(paymentStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid payment status. Must be unpaid, partially_paid, paid, or cancelled',
+        });
+      }
+      invoice.paymentStatus = paymentStatus;
+    }
+
+    // Auto-calculate dueAmount
+    invoice.dueAmount = Math.max(0, invoice.totalAmount - invoice.paidAmount);
+
+    await invoice.save();
+
+    // Populate response
+    const updatedInvoice = await Invoice.findById(invoice._id)
+      .populate('patient', '_id fullName phone')
+      .populate('doctor', '_id fullName department specialization');
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment status updated successfully',
+      data: {
+        _id: updatedInvoice._id,
+        invoiceNumber: updatedInvoice.invoiceNumber,
+        totalAmount: updatedInvoice.totalAmount,
+        paidAmount: updatedInvoice.paidAmount,
+        dueAmount: updatedInvoice.dueAmount,
+        paymentStatus: updatedInvoice.paymentStatus,
+        patient: updatedInvoice.patient,
+        doctor: updatedInvoice.doctor,
+      },
+    });
+
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid invoice ID format',
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update payment status',
+      error: error.message,
+    });
+  }
+};
 // Delete invoice
 export const deleteInvoice = async (req, res) => {
   try {
