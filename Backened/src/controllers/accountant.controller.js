@@ -225,7 +225,7 @@ export const createInvoice = async (req, res) => {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
+        message: errors,
         errors,
       });
     }
@@ -407,20 +407,22 @@ export const getInvoices = async (req, res) => {
   try {
     const invoices = await Invoice.find()
       .populate('patient', '_id fullName phone profileImage')
-      .sort({ creationDate: -1, createdAt: -1 });
+      .populate('doctor', '_id fullName specialization')
+      .sort({ issueDate: -1, createdAt: -1 });
 
-    // Format response to match the model structure
     const formattedInvoices = invoices.map(invoice => ({
       _id: invoice._id,
       title: invoice.title,
       invoiceNumber: invoice.invoiceNumber,
       patient: invoice.patient,
-      creationDate: invoice.creationDate,
-      dueDate: invoice.dueDate,
-      taxPercentage: invoice.taxPercentage,
-      discountAmount: invoice.discountAmount,
-      status: invoice.status,
-      entries: invoice.entries,
+      doctor: invoice.doctor || null,
+      issueDate: invoice.issueDate,
+      dueDate: invoice.dueDate || null,
+      totalAmount: invoice.totalAmount,
+      paidAmount: invoice.paidAmount,
+      dueAmount: invoice.dueAmount,
+      paymentStatus: invoice.paymentStatus,
+      paymentMethod: invoice.paymentMethod || null,
       createdAt: invoice.createdAt,
       updatedAt: invoice.updatedAt,
     }));
@@ -734,27 +736,7 @@ export const updateInvoice = async (req, res) => {
     }
 
     // ============================================
-    // Auto-calculate Payment Status (if paidAmount changed but status not provided)
-    // ============================================
-    if (paidAmount !== undefined && !paymentStatus) {
-      // Recalculate totals
-      const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
-      const totalAmount = Math.max(0, subtotal - invoice.discount + invoice.tax);
-      
-      // Auto-calculate status based on paidAmount
-      if (invoice.paidAmount >= totalAmount) {
-        invoice.paymentStatus = 'paid';
-      } else if (invoice.paidAmount > 0) {
-        invoice.paymentStatus = 'partially_paid';
-      } else {
-        invoice.paymentStatus = 'unpaid';
-      }
-    }
-
-    // ============================================
-    // Recalculate Totals (pre-save middleware will handle this)
-    // ============================================
-    // Save invoice (pre-save middleware will recalculate all totals)
+    
     await invoice.save();
 
     // ============================================

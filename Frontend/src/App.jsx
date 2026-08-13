@@ -22,6 +22,7 @@ import DoctorDashboard from './pages/doctor/DoctorDashboard';
 import NurseDashboard from './pages/nurse/NurseDashboard';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard';
 import AccountantDashboard from './pages/accountant/AccountantDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
   return (
@@ -61,6 +62,9 @@ function App() {
 </Route>        
 <Route element={<ProtectedRoute allowedRoles={['accountant']} />}>
   <Route path="/accountant/dashboard" element={<AccountantDashboard/>} />
+</Route>        
+<Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+  <Route path="/admin/dashboard" element={<AdminDashboard/>} />
 </Route>        
           {/* 404 Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
