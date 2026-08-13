@@ -135,11 +135,11 @@ const DepartmentsTab = () => {
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('description', formData.description);
-      if (formData.image) {
+      
         if (formData.image) {
   formDataToSend.append('profileImage', formData.image);
 }
-      }
+      
 
       const response = await axiosInstance.patch(`/admin/departments/${selectedDepartment._id}`, formDataToSend, {
         headers: {
