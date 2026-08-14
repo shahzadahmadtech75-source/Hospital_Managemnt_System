@@ -11,6 +11,7 @@ import DepartmentsPage from './pages/public/DepartmetsPage'
 import DoctorsPage from './pages/public/DoctorsPage'
 import ContactPage from './pages/public/ContactPage';
 
+
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage'
@@ -37,7 +38,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/doctors" element={<DoctorsPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+<Route path="/contact" element={<ContactPage />} />
           
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />

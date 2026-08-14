@@ -11,10 +11,12 @@ import DepartmentsTab from '../../components/adminTabs/DepartmentsTab';
 import MonitorTab from '../../components/adminTabs/MonitorTab';
 import NoticesTab from '../../components/adminTabs/NoticesTab';
 import ProfileTab from '../../components/adminTabs/ProfileTab';
+import EmergencyTab from '../../components/adminTabs/EmergencyTab';
 
 // Icons
 import {
   HomeIcon,
+  ExclamationTriangleIcon,
   UserGroupIcon,
   UsersIcon,
   BuildingOfficeIcon,
@@ -48,6 +50,7 @@ const AdminDashboard = () => {
     { id: 'monitor', label: 'Monitor', icon: EyeIcon },
     { id: 'notices', label: 'Notices', icon: MegaphoneIcon },
     { id: 'profile', label: 'Profile', icon: UserCircleIcon },
+    { id: 'emergency', label: 'Emergency', icon: ExclamationTriangleIcon }, 
   ];
 
   // Check profile completeness on mount
@@ -105,6 +108,9 @@ const AdminDashboard = () => {
         return <MonitorTab />;
       case 'notices':
         return <NoticesTab />;
+        case 'emergency':
+  return <EmergencyTab />;
+
       case 'profile':
         return <ProfileTab setIsProfileComplete={setIsProfileComplete} />;
       default:

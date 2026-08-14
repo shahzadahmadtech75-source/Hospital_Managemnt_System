@@ -12,6 +12,7 @@ import doctorProfileRoutes from './routes/doctorProfile.routes.js';
 import nurseRoutes from './routes/nurse.routes.js';
 import accountantRoutes from './routes/accountant.routes.js'
 import publicRoutes from './routes/public.routes.js';
+import emergencyRoutes from './routes/emergancy.routes.js';
 
 
 
@@ -35,6 +36,10 @@ app.use(cookieParser());
 
 
 app.use('/api/v1/public', publicRoutes);
+
+
+// Use routes
+app.use('/api/v1', emergencyRoutes);
 
 // API routes
 app.use('/api/v1/auth', authRoutes);

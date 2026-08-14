@@ -5,6 +5,8 @@ import axiosInstance from '../../api/axiosInstance';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import DoctorProfileModal from '../../components/common/DoctorProfileModal';
+import { HashLink } from 'react-router-hash-link';
+
 import {
   PhoneIcon,
   ClockIcon,
@@ -16,6 +18,7 @@ import {
   UserIcon,
   AcademicCapIcon,
   BuildingOfficeIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 
 const LandingPage = () => {
@@ -52,18 +55,22 @@ const LandingPage = () => {
       title: 'Quality Healthcare for All',
       subtitle: 'Compassionate care, advanced technology, and expert medical professionals dedicated to your well-being.',
       cta: 'Book Appointment',
+      link : '#appointment'
+    
     },
     {
-      image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&h=600&fit=crop',
+      image: 'https://plus.unsplash.com/premium_photo-1681843126728-04eab730febe?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fGRvY3RvcnN8ZW58MHx8MHx8fDA%3D',
       title: 'Expert Medical Team',
       subtitle: 'Our highly skilled doctors and nurses provide personalized care using the latest medical advancements.',
       cta: 'Meet Our Doctors',
+      link:'/doctors'
     },
     {
       image: 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1200&h=600&fit=crop',
       title: '24/7 Emergency Care',
       subtitle: 'Round-the-clock emergency services with rapid response teams and state-of-the-art facilities.',
       cta: 'Emergency Contact',
+      link:'/contact'
     },
   ];
 
@@ -202,69 +209,75 @@ const LandingPage = () => {
       <Header />
 
       {/* Hero Slider */}
-      <section id="home" className="relative pt-16">
-        <div className="relative h-[500px] md:h-[400px] overflow-hidden">
-          {slides.map((slide, index) => (
+      <section id="home" className="relative pt-16 bg-white">
+  <div className="relative h-[520px] md:h-[440px] overflow-hidden">
+    {slides.map((slide, index) => (
+      <div
+        key={index}
+        className={`absolute inset-0 transition-opacity duration-1000 ${
+          index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="grid md:grid-cols-2 h-full items-center">
+          {/* Left: Text content */}
+          <div className="order-2 md:order-1 px-6 sm:px-10 lg:px-16">
+            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+              {slide.title}
+            </h1>
+            <p className="text-base md:text-lg text-gray-500 mb-8 max-w-xl">
+              {slide.subtitle}
+            </p>
+            <HashLink smooth to={slide.link}>
+  <button className="px-6 py-3 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+              {slide.cta}
+            </button>
+</HashLink>
+          </div>
+
+          {/* Right: Image, full-bleed to the edge */}
+          <div className="relative h-full order-1 md:order-2 min-h-[220px]">
             <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${slide.image})` }}
-              />
-              <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
-                  <h1 className="text-3xl md:text-5xl font-bold mb-4">
-                    {slide.title}
-                  </h1>
-                  <p className="text-base md:text-lg text-gray-200 mb-6 max-w-2xl mx-auto">
-                    {slide.subtitle}
-                  </p>
-                  <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
-                    {slide.cta}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Slider Controls */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
-            aria-label="Previous slide"
-          >
-            <ChevronLeftIcon className="w-6 h-6" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full transition-colors"
-            aria-label="Next slide"
-          >
-            <ChevronRightIcon className="w-6 h-6" />
-          </button>
-
-          {/* Slider Dots */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentSlide
-                    ? 'w-8 bg-blue-600'
-                    : 'bg-white/50 hover:bg-white/80'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${slide.image})` }}
+            />
+            {/* soft fade so the image blends into the white panel, like the reference */}
+            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent hidden md:block" />
           </div>
         </div>
-      </section>
+      </div>
+    ))}
+
+    {/* Slider Controls */}
+    <button
+      onClick={prevSlide}
+      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md transition-colors z-20"
+      aria-label="Previous slide"
+    >
+      <ChevronLeftIcon className="w-6 h-6" />
+    </button>
+    <button
+      onClick={nextSlide}
+      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md transition-colors z-20"
+      aria-label="Next slide"
+    >
+      <ChevronRightIcon className="w-6 h-6" />
+    </button>
+
+    {/* Slider Dots */}
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+      {slides.map((_, index) => (
+        <button
+          key={index}
+          onClick={() => goToSlide(index)}
+          className={`h-2 rounded-full transition-all ${
+            index === currentSlide ? 'w-8 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+          }`}
+          aria-label={`Go to slide ${index + 1}`}
+        />
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* Quick Action Cards */}
       <section className="py-12 bg-gray-50">
@@ -349,23 +362,44 @@ const LandingPage = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {departments.map((dept) => (
-                <div
-                  key={dept._id}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                    <BuildingOfficeIcon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-gray-800 mb-2">
-                    {dept.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {dept.description || 'Comprehensive medical care'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {dept.doctors?.length || 0} Doctors
-                  </p>
-                </div>
+               <div
+  key={dept._id}
+  className="group relative bg-white rounded-2xl border border-slate-400 p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
+>
+  {/* Top accent line — appears on hover, signals "selected/active" state */}
+  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
+
+  {/* Icon */}
+  <div className="w-20 h-20 bg-blue-50 rounded-xl flex items-center justify-center mb-4 border border-blue-100 transition-colors duration-300  group-hover:border-blue-400">
+    {dept.image ? (
+      <img
+        src={dept.image}
+        alt={dept.name}
+        className="w-18 h-18 object-contain rounded-md"
+      />
+    ) : (
+      <BuildingOfficeIcon className="w-6 h-6 text-blue-500 transition-colors duration-300 group-hover:text-white" />
+    )}
+  </div>
+
+  {/* Department Name */}
+  <h3 className="font-semibold text-slate-900 text-base mb-1.5 tracking-tight">
+    {dept.name}
+  </h3>
+
+  {/* Description */}
+  <p className="text-sm text-slate-500 leading-relaxed mb-4 min-h-[40px]">
+    {dept.description || 'Comprehensive medical care'}
+  </p>
+
+  {/* Doctor count */}
+  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+    <UserGroupIcon className="w-4 h-4 text-blue-400" />
+    <span className="text-sm font-medium text-slate-700">
+      {dept.doctors?.length || 0} <span className="font-normal text-slate-400">Doctors</span>
+    </span>
+  </div>
+</div>
               ))}
             </div>
           )}
@@ -402,8 +436,9 @@ const LandingPage = () => {
               {doctors.map((doctor) => (
                 <div
                   key={doctor._id}
-                  className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                  className="group relative bg-white rounded-2xl border border-slate-400 p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
                 >
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
                   {/* Doctor Image */}
                   <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 overflow-hidden">
                     {doctor.profileImage ? (
@@ -461,7 +496,7 @@ const LandingPage = () => {
       </section>
 
       {/* Appointment Form Section */}
-      <section id="contact" className="py-16 bg-gray-50">
+      <section id="appointment" className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
             Get in Touch & Book Appointment
