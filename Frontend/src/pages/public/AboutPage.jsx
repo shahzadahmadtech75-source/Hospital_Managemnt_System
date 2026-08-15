@@ -1,6 +1,7 @@
-import React from 'react';
+
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
+import { Link } from 'react-router-dom';
 import {
   BuildingOfficeIcon,
   HeartIcon,
@@ -17,7 +18,11 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
+import AppointmentBookingModal from '../../components/common/AppointmentBookingModal';
+import { useState } from 'react';
 
+
+ 
 // Replace with real content / API data — these are placeholders to wire up
 const values = [
   { icon: HeartIcon, title: 'Compassion First', desc: 'Every decision starts with what is best for the person in front of us, not just the chart.' },
@@ -61,6 +66,7 @@ const PulseLine = ({ className = '' }) => (
 );
 
 const AboutPage = () => {
+const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <div className="bg-white text-slate-800">
       <Header/>
@@ -99,12 +105,14 @@ const AboutPage = () => {
               and safe.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+              <button onClick={() => setIsModalOpen(true)}
+ className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer font-medium rounded-lg transition-colors">
                 Book an Appointment <ArrowRightIcon className="w-4 h-4" />
               </button>
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 hover:border-blue-300 text-slate-700 font-medium rounded-lg transition-colors">
+              <Link to='/doctors'>
+              <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border cursor-pointer border-green-500 hover:border-blue-300 text-slate-700 font-medium rounded-lg transition-colors">
                 Meet Our Doctors
-              </button>
+              </button></Link>
             </div>
           </div>
 
@@ -145,6 +153,22 @@ const AboutPage = () => {
         </div>
       </section>
 
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
+
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* MISSION / VALUES */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 py-20">
         <div className="max-w-2xl mb-12">
@@ -165,8 +189,8 @@ const AboutPage = () => {
                 key={i}
                 className="group bg-white rounded-2xl border border-slate-200 p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100 hover:-translate-y-0.5"
               >
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4 border border-blue-100 transition-colors duration-300 group-hover:bg-blue-600 group-hover:border-blue-600">
-                  <Icon className="w-6 h-6 text-blue-500 transition-colors duration-300 group-hover:text-white" />
+                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4 border border-blue-400 transition-colors duration-300 group-hover:bg-blue-600 group-hover:border-blue-600">
+                  <Icon className="w-6 h-6 text-white transition-colors duration-300 " />
                 </div>
                 <h3 className="font-semibold text-slate-900 mb-2">{v.title}</h3>
                 <p className="text-sm text-slate-500 leading-relaxed">{v.desc}</p>
@@ -175,7 +199,22 @@ const AboutPage = () => {
           })}
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* OUR STORY / TIMELINE */}
       <section className="bg-slate-50 border-y border-slate-100">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-20 grid md:grid-cols-2 gap-16">
@@ -205,7 +244,22 @@ const AboutPage = () => {
           </div>
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* LEADERSHIP */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 py-20">
         <div className="max-w-2xl mb-12">
@@ -248,7 +302,22 @@ const AboutPage = () => {
           <p className="text-sm text-slate-500">Maria T. — Patient since 2018</p>
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 py-20">
         <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl px-8 md:px-16 py-14 text-center relative overflow-hidden">
@@ -261,7 +330,8 @@ const AboutPage = () => {
             specialist consultation.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <button className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-blue-50 text-blue-700 font-semibold rounded-lg transition-colors">
+            <button onClick={() => setIsModalOpen(true)}
+ className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-blue-50 text-blue-700 font-semibold rounded-lg transition-colors">
               Book an Appointment <ArrowRightIcon className="w-4 h-4" />
             </button>
             <button className="inline-flex items-center gap-2 px-6 py-3 border border-blue-300 hover:bg-blue-500/30 text-white font-medium rounded-lg transition-colors">
@@ -271,6 +341,11 @@ const AboutPage = () => {
         </div>
       </section>
       <Footer/>
+       {/* Appointment Modal */}
+      <AppointmentBookingModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

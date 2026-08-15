@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter,Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectRoute'
 import { Toaster } from './components/common/Toaster';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -31,7 +32,10 @@ function App() {
       <AuthProvider>
         {/* Add Toaster here */}
         <Toaster />
-        
+          
+      <ScrollToTop />
+      {/* your <Routes> / <Navbar> / <Footer> etc. go here as usual */}
+    
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />

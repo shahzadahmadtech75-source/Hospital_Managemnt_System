@@ -279,6 +279,22 @@ const LandingPage = () => {
   </div>
 </section>
 
+  {/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
+
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* Quick Action Cards */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,7 +319,22 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* Welcome Section */}
       <section id="about" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -333,7 +364,22 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* Departments Section */}
       <section id="departments" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -405,7 +451,22 @@ const LandingPage = () => {
           )}
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* Doctors Section */}
       <section id="doctors" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -494,7 +555,22 @@ const LandingPage = () => {
           )}
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       {/* Appointment Form Section */}
       <section id="appointment" className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -621,7 +697,22 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+{/* separating line */}
+<div className="relative py-2 mt-1.5">
+  <div className="absolute inset-0 flex items-center">
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900 to-transparent" />
+  </div>
 
+  <div className="relative flex justify-center">
+    <span className="bg-green px-4 flex gap-5">
+      <span className="block w-1.5 h-1.5 rounded-full bg-green-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-red-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-blue-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-yellow-800" />
+      <span className="block w-1.5 h-1.5 rounded-full bg-indigo-800" />
+    </span>
+  </div>
+</div>
       <Footer />
 
       {/* Doctor Profile Modal */}

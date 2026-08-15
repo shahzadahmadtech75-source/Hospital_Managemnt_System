@@ -176,7 +176,7 @@ const ReceptionistDashboard = () => {
           {isSidebarOpen ? (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">H</span>
+                <img className='w-full h-full object-cover' src="https://tse1.mm.bing.net/th/id/OIP.XDpsKD3Omlj227bBS54s6wHaHa?r=0&pid=Api&h=220&P=0" alt="" />
               </div>
               <span className="text-lg font-semibold text-gray-800">Reception</span>
             </div>
