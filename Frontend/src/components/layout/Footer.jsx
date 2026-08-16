@@ -17,8 +17,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="relative bg-gray-900 text-gray-300">
-   
+    <footer className="relative bg-gray-900 dark:bg-gray-900 text-gray-300 dark:text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About Column */}
@@ -35,50 +34,50 @@ const Footer = () => {
                 HMS
               </span>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
+            <p className="text-sm text-gray-400 dark:text-gray-400 leading-relaxed">
               Providing quality healthcare services with compassion and excellence. Your health is our priority.
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-         <ul className="space-y-1 text-sm">
-  <li>
-    <Link to="/home" className="text-gray-400 hover:text-white transition-colors">
-      Home
-    </Link>
-  </li>
-  <li>
-    <Link to="/about" className="text-gray-400 hover:text-white transition-colors">
-      About Us
-    </Link>
-  </li>
-  <li>
-    <Link to="/departments" className="text-gray-400 hover:text-white transition-colors">
-      Departments
-    </Link>
-  </li>
-  <li>
-    <Link to="/doctors" className="text-gray-400 hover:text-white transition-colors">
-      Our Doctors
-    </Link>
-  </li>
-</ul>
+            <h3 className="text-white dark:text-gray-100 font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <Link to="/home" className="text-gray-400 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/about" className="text-gray-400 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/departments" className="text-gray-400 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors">
+                  Departments
+                </Link>
+              </li>
+              <li>
+                <Link to="/doctors" className="text-gray-400 dark:text-gray-400 hover:text-white dark:hover:text-gray-200 transition-colors">
+                  Our Doctors
+                </Link>
+              </li>
+            </ul>
           </div>
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Contact</h3>
+            <h3 className="text-white dark:text-gray-100 font-semibold mb-4">Contact</h3>
             <ul className="space-y-2 text-sm">
-              <li className="text-gray-400">
+              <li className="text-gray-400 dark:text-gray-400">
                 123 Healthcare Blvd,<br />
                 Medical District, MD 10001
               </li>
-              <li className="text-gray-400">
+              <li className="text-gray-400 dark:text-gray-400">
                 Phone: (555) 123-4567
               </li>
-              <li className="text-gray-400">
+              <li className="text-gray-400 dark:text-gray-400">
                 Email: info@hms.com
               </li>
             </ul>
@@ -86,38 +85,38 @@ const Footer = () => {
 
           {/* Working Hours */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Working Hours</h3>
+            <h3 className="text-white dark:text-gray-100 font-semibold mb-4">Working Hours</h3>
             <ul className="space-y-2 text-sm">
-              <li className="text-gray-400">
-                <span className="text-white">Mon - Fri:</span> 8:00 AM - 8:00 PM
+              <li className="text-gray-400 dark:text-gray-400">
+                <span className="text-white dark:text-gray-200">Mon - Fri:</span> 8:00 AM - 8:00 PM
               </li>
-              <li className="text-gray-400">
-                <span className="text-white">Saturday:</span> 9:00 AM - 5:00 PM
+              <li className="text-gray-400 dark:text-gray-400">
+                <span className="text-white dark:text-gray-200">Saturday:</span> 9:00 AM - 5:00 PM
               </li>
-              <li className="text-gray-400">
-                <span className="text-white">Sunday:</span> Closed
+              <li className="text-gray-400 dark:text-gray-400">
+                <span className="text-white dark:text-gray-200">Sunday:</span> Closed
               </li>
-              <li className="text-gray-400">
-                <span className="text-white">Emergency:</span> 24/7 Available
+              <li className="text-gray-400 dark:text-gray-400">
+                <span className="text-white dark:text-gray-200">Emergency:</span> 24/7 Available
               </li>
             </ul>
           </div>
         </div>
 
         {/* Copyright */}
-<div className="border-t border-gray-800 mt-8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-  <p>&copy; {currentYear} HMS - Hospital Management System. All rights reserved.</p>
+        <div className="border-t border-gray-800 dark:border-gray-700 mt-8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400 dark:text-gray-500">
+          <p>&copy; {currentYear} HMS - Hospital Management System. All rights reserved.</p>
 
-  {showScrollTop && (
-    <button
-      onClick={scrollToTop}
-      aria-label="Scroll to top"
-      className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-white flex items-center justify-center shadow-md shadow-blue-900/30 hover:from-blue-500 hover:to-blue-700 hover:-translate-y-0.5 transition-all duration-300 flex-shrink-0"
-    >
-      <ArrowUpIcon className="w-4 h-4" />
-    </button>
-  )}
-</div>
+          {showScrollTop && (
+            <button
+              onClick={scrollToTop}
+              aria-label="Scroll to top"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-700 dark:to-blue-900 text-white flex items-center justify-center shadow-md shadow-blue-900/30 hover:from-blue-500 hover:to-blue-700 hover:-translate-y-0.5 transition-all duration-300 flex-shrink-0"
+            >
+              <ArrowUpIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </footer>
   );

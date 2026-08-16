@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from '../common/Toaster';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import DarkModeToggle from '../common/DarkModeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -31,13 +32,13 @@ const Header = () => {
     toast(
       (t) => (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-gray-800">Are you sure you want to logout?</p>
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Are you sure you want to logout?</p>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => {
                 toast.dismiss(t.id);
               }}
-              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+              className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
             >
               Cancel
             </button>
@@ -66,7 +67,7 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-blue-100 shadow-sm border-b border-gray-200' : 'bg-white/95 backdrop-blur-sm'
+        isScrolled ? 'bg-blue-100 dark:bg-blue-950/40 shadow-sm border-b border-gray-200 dark:border-gray-700' : 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm'
       }`}
     >
       <div className="max-w-7xl border-b-blue-700 border-b-2 mx-auto px-4 sm:px-6 lg:px-6">
@@ -87,7 +88,7 @@ const Header = () => {
               <Link
                 key={link.name}
                 to={link.path}
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 {link.name}
               </Link>
@@ -112,13 +113,13 @@ const Header = () => {
                       </span>
                     )}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {user?.fullName || user?.username || user?.email}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   Logout
                 </button>
@@ -143,12 +144,18 @@ const Header = () => {
   Dashboard
 </Link>
 
+
+
+<div className="flex items-center space-x-4">
+  <DarkModeToggle />
+  {/* Rest of your header items */}
+</div>
               </div>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   Login
                 </Link>
@@ -165,7 +172,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
@@ -175,19 +182,19 @@ const Header = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-gray-200 shadow-lg">
+        <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-lg">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsMenuOpen(false)}
-                className="block text-sm text-gray-600 hover:text-gray-900 transition-colors py-2"
+                className="block text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors py-2"
               >
                 {link.name}
               </Link>
             ))}
-            <div className="pt-4 border-t border-gray-200 space-y-2">
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center space-x-3">
@@ -204,7 +211,7 @@ const Header = () => {
                         </span>
                       )}
                     </div>
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                       {user?.fullName || user?.username || user?.email}
                     </span>
                   </div>
@@ -241,7 +248,7 @@ const Header = () => {
                   <Link
                     to="/login"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-center px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"
+                    className="block w-full text-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     Login
                   </Link>

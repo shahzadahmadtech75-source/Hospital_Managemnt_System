@@ -1,1 +1,16 @@
-@import 'tailwindcss'
+@import "tailwindcss";
+
+/* Custom dark mode variant */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+  }
+}
+
+/* Dark mode body styles */
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}

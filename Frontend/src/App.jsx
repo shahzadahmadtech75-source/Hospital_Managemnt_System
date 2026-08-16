@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectRoute'
 import { Toaster } from './components/common/Toaster';
 import ScrollToTop from './components/common/ScrollToTop';
+import { SocketProvider } from './context/SocketContext';
 
 // Public Pages
 import LandingPage from './pages/public/LandingPage'
@@ -30,7 +31,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SocketProvider>
+
         {/* Add Toaster here */}
+
         <Toaster />
           
       <ScrollToTop />
@@ -74,6 +78,7 @@ function App() {
           {/* 404 Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   );

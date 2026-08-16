@@ -1,4 +1,6 @@
 import express from 'express';
+
+
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
@@ -13,6 +15,7 @@ import nurseRoutes from './routes/nurse.routes.js';
 import accountantRoutes from './routes/accountant.routes.js'
 import publicRoutes from './routes/public.routes.js';
 import emergencyRoutes from './routes/emergancy.routes.js';
+import messageRoutes from './routes/message.routes.js';
 
 
 
@@ -46,6 +49,9 @@ app.use('/api/v1/auth', authRoutes);
 //Protected routes
 app.use('/api/v1/protected', protectedRoutes);
 
+
+// message routes
+app.use('/api/v1/messages', messageRoutes);
 
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/staff', staffRoutes);
@@ -83,5 +89,7 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });
+
+
 
 export default app;

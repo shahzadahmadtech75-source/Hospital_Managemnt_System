@@ -183,33 +183,33 @@ const LandingPage = () => {
       title: 'Emergency Contact',
       description: '24/7 emergency assistance available',
       detail: '(555) 123-4567',
-      bg: 'bg-red-50 border-red-200',
-      iconBg: 'bg-red-100 text-red-600',
+      bg: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/60',
+      iconBg: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
     },
     {
       icon: CalendarIcon,
       title: 'Fast Booking',
       description: 'Book appointments online in minutes',
       detail: 'Available 24/7',
-      bg: 'bg-blue-50 border-blue-200',
-      iconBg: 'bg-blue-100 text-blue-600',
+      bg: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/60',
+      iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
     },
     {
       icon: ClockIcon,
       title: 'Opening Hours',
       description: 'Mon-Fri: 8AM - 8PM',
       detail: 'Sat: 9AM - 5PM',
-      bg: 'bg-green-50 border-green-200',
-      iconBg: 'bg-green-100 text-green-600',
+      bg: 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/60',
+      iconBg: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
 
       {/* Hero Slider */}
-      <section id="home" className="relative pt-16 bg-white">
+      <section id="home" className="relative pt-16 bg-white dark:bg-gray-900">
   <div className="relative h-[520px] md:h-[440px] overflow-hidden">
     {slides.map((slide, index) => (
       <div
@@ -221,10 +221,10 @@ const LandingPage = () => {
         <div className="grid md:grid-cols-2 h-full items-center">
           {/* Left: Text content */}
           <div className="order-2 md:order-1 px-6 sm:px-10 lg:px-16">
-            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4 leading-tight">
               {slide.title}
             </h1>
-            <p className="text-base md:text-lg text-gray-500 mb-8 max-w-xl">
+            <p className="text-base md:text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-xl">
               {slide.subtitle}
             </p>
             <HashLink smooth to={slide.link}>
@@ -241,7 +241,7 @@ const LandingPage = () => {
               style={{ backgroundImage: `url(${slide.image})` }}
             />
             {/* soft fade so the image blends into the white panel, like the reference */}
-            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent hidden md:block" />
+            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white dark:from-gray-900 to-transparent hidden md:block" />
           </div>
         </div>
       </div>
@@ -250,14 +250,14 @@ const LandingPage = () => {
     {/* Slider Controls */}
     <button
       onClick={prevSlide}
-      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md transition-colors z-20"
+      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100 rounded-full shadow-md transition-colors z-20"
       aria-label="Previous slide"
     >
       <ChevronLeftIcon className="w-6 h-6" />
     </button>
     <button
       onClick={nextSlide}
-      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md transition-colors z-20"
+      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-100 rounded-full shadow-md transition-colors z-20"
       aria-label="Next slide"
     >
       <ChevronRightIcon className="w-6 h-6" />
@@ -270,7 +270,7 @@ const LandingPage = () => {
           key={index}
           onClick={() => goToSlide(index)}
           className={`h-2 rounded-full transition-all ${
-            index === currentSlide ? 'w-8 bg-blue-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+            index === currentSlide ? 'w-8 bg-blue-600' : 'w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
           }`}
           aria-label={`Go to slide ${index + 1}`}
         />
@@ -296,7 +296,7 @@ const LandingPage = () => {
   </div>
 </div>
       {/* Quick Action Cards */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
@@ -309,9 +309,9 @@ const LandingPage = () => {
                     <action.icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800">{action.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{action.description}</p>
-                    <p className="text-sm font-medium text-gray-800 mt-1">{action.detail}</p>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{action.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{action.description}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 mt-1">{action.detail}</p>
                   </div>
                 </div>
               </div>
@@ -336,7 +336,7 @@ const LandingPage = () => {
   </div>
 </div>
       {/* Welcome Section */}
-      <section id="about" className="py-16 bg-white">
+      <section id="about" className="py-16 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -347,16 +347,16 @@ const LandingPage = () => {
               />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">
                 Welcome to HMS
               </h2>
-              <p className="text-gray-600 leading-relaxed mb-4">
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
                 At HMS, we are committed to providing exceptional healthcare services with compassion, 
                 innovation, and excellence. Our state-of-the-art facility is equipped with the latest 
                 medical technology, and our team of experienced professionals is dedicated to ensuring 
                 the best possible outcomes for our patients.
               </p>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                 Whether you need routine check-ups, specialized treatments, or emergency care, 
                 we are here to serve you with the highest standards of medical care.
               </p>
@@ -381,42 +381,42 @@ const LandingPage = () => {
   </div>
 </div>
       {/* Departments Section */}
-      <section id="departments" className="py-16 bg-gray-50">
+      <section id="departments" className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-4">
             Our Departments
           </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-300 text-center mb-12 max-w-2xl mx-auto">
             Comprehensive medical departments staffed by highly qualified specialists
           </p>
 
           {loading.departments ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                  <div className="h-12 w-12 bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+                  <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full mb-1"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                 </div>
               ))}
             </div>
           ) : departments.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No departments available at the moment.</p>
+              <p className="text-gray-500 dark:text-gray-400">No departments available at the moment.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {departments.map((dept) => (
                <div
   key={dept._id}
-  className="group relative bg-white rounded-2xl border border-slate-400 p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
+  className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-slate-400 dark:border-gray-700 p-6 transition-all duration-300 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
 >
   {/* Top accent line — appears on hover, signals "selected/active" state */}
   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
 
   {/* Icon */}
-  <div className="w-20 h-20 bg-blue-50 rounded-xl flex items-center justify-center mb-4 border border-blue-100 transition-colors duration-300  group-hover:border-blue-400">
+  <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-800 transition-colors duration-300  group-hover:border-blue-400">
     {dept.image ? (
       <img
         src={dept.image}
@@ -429,20 +429,20 @@ const LandingPage = () => {
   </div>
 
   {/* Department Name */}
-  <h3 className="font-semibold text-slate-900 text-base mb-1.5 tracking-tight">
+  <h3 className="font-semibold text-slate-900 dark:text-gray-100 text-base mb-1.5 tracking-tight">
     {dept.name}
   </h3>
 
   {/* Description */}
-  <p className="text-sm text-slate-500 leading-relaxed mb-4 min-h-[40px]">
+  <p className="text-sm text-slate-500 dark:text-gray-400 leading-relaxed mb-4 min-h-[40px]">
     {dept.description || 'Comprehensive medical care'}
   </p>
 
   {/* Doctor count */}
-  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+  <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-gray-700">
     <UserGroupIcon className="w-4 h-4 text-blue-400" />
-    <span className="text-sm font-medium text-slate-700">
-      {dept.doctors?.length || 0} <span className="font-normal text-slate-400">Doctors</span>
+    <span className="text-sm font-medium text-slate-700 dark:text-gray-200">
+      {dept.doctors || 0} <span className="font-normal text-slate-400 dark:text-gray-500">Doctors</span>
     </span>
   </div>
 </div>
@@ -468,40 +468,40 @@ const LandingPage = () => {
   </div>
 </div>
       {/* Doctors Section */}
-      <section id="doctors" className="py-16 bg-white">
+      <section id="doctors" className="py-16 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-4">
             Our Doctors
           </h2>
-          <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-300 text-center mb-12 max-w-2xl mx-auto">
             Expert medical professionals dedicated to your health and well-being
           </p>
 
           {loading.doctors ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="bg-gray-50 rounded-lg border border-gray-200 p-4 animate-pulse">
-                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 animate-pulse">
+                  <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full mb-1"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                 </div>
               ))}
             </div>
           ) : doctors.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No doctors available at the moment.</p>
+              <p className="text-gray-500 dark:text-gray-400">No doctors available at the moment.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {doctors.map((doctor) => (
                 <div
                   key={doctor._id}
-                  className="group relative bg-white rounded-2xl border border-slate-400 p-6 transition-all duration-300 hover:border-blue-200 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
+                  className="group relative bg-white dark:bg-gray-800 rounded-2xl border border-slate-400 dark:border-gray-700 p-6 transition-all duration-300 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-[0_8px_30px_-12px_rgba(37,99,235,0.25)] hover:-translate-y-0.5"
                 >
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
                   {/* Doctor Image */}
-                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 overflow-hidden">
+                  <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4 overflow-hidden">
                     {doctor.profileImage ? (
                       <img
                         src={doctor.profileImage}
@@ -509,7 +509,7 @@ const LandingPage = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 text-gray-400">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/20 text-gray-400 dark:text-gray-500">
                         <UserIcon className="w-12 h-12" />
                         <span className="text-sm mt-2">No Image</span>
                       </div>
@@ -517,26 +517,26 @@ const LandingPage = () => {
                   </div>
                   
                   {/* Doctor Info */}
-                  <h3 className="font-semibold text-gray-800 text-lg">
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-lg">
                     Dr. {doctor.fullName}
                   </h3>
                   <p className="text-sm text-blue-600 font-medium">
                     {doctor.specialization}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {doctor.department}
                   </p>
                   
                   {/* Qualification & Experience */}
                   <div className="mt-2 space-y-1">
                     {doctor.qualification && (
-                      <p className="text-xs text-gray-600 flex items-center gap-1">
+                      <p className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-1">
                         <AcademicCapIcon className="w-3 h-3" />
                         {doctor.qualification}
                       </p>
                     )}
                     {doctor.experienceYears && (
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         {doctor.experienceYears} years experience
                       </p>
                     )}
@@ -545,7 +545,7 @@ const LandingPage = () => {
                   {/* View Profile Button */}
                   <button
                     onClick={() => handleViewDoctor(doctor)}
-                    className="w-full mt-3 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium rounded-md transition-colors border border-blue-200"
+                    className="w-full mt-3 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md transition-colors border border-blue-200 dark:border-blue-800"
                   >
                     View Profile
                   </button>
@@ -572,36 +572,36 @@ const LandingPage = () => {
   </div>
 </div>
       {/* Appointment Form Section */}
-      <section id="appointment" className="py-16 bg-gray-50">
+      <section id="appointment" className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center mb-4">
             Get in Touch & Book Appointment
           </h2>
-          <p className="text-gray-600 text-center mb-8">
+          <p className="text-gray-600 dark:text-gray-300 text-center mb-8">
             Schedule an appointment with our expert medical professionals
           </p>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6 md:p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 md:p-8">
             {formSuccess && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md flex items-start space-x-3">
+              <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md flex items-start space-x-3">
                 <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-green-700 font-medium">Appointment booked successfully!</p>
-                  <p className="text-sm text-green-600">We will contact you shortly to confirm.</p>
+                  <p className="text-sm text-green-700 dark:text-green-400 font-medium">Appointment booked successfully!</p>
+                  <p className="text-sm text-green-600 dark:text-green-400">We will contact you shortly to confirm.</p>
                 </div>
               </div>
             )}
 
             {formError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md flex items-start space-x-3">
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-start space-x-3">
                 <XCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{formError}</p>
+                <p className="text-sm text-red-700 dark:text-red-400">{formError}</p>
               </div>
             )}
 
             <form onSubmit={handleAppointmentSubmit} className="space-y-5">
               <div>
-                <label htmlFor="doctorId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="doctorId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Select Doctor *
                 </label>
                 <select
@@ -610,7 +610,7 @@ const LandingPage = () => {
                   value={formData.doctorId}
                   onChange={handleFormChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="">Select a doctor</option>
                   {doctors.map((doctor) => (
@@ -622,7 +622,7 @@ const LandingPage = () => {
               </div>
 
               <div>
-                <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Appointment Date *
                 </label>
                 <input
@@ -633,12 +633,12 @@ const LandingPage = () => {
                   onChange={handleFormChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
 
               <div>
-                <label htmlFor="appointmentTime" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="appointmentTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Appointment Time *
                 </label>
                 <select
@@ -647,7 +647,7 @@ const LandingPage = () => {
                   value={formData.appointmentTime}
                   onChange={handleFormChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="">Select time</option>
                   {Array.from({ length: 12 }, (_, i) => {
@@ -665,7 +665,7 @@ const LandingPage = () => {
               </div>
 
               <div>
-                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Reason for Visit *
                 </label>
                 <textarea
@@ -676,7 +676,7 @@ const LandingPage = () => {
                   onChange={handleFormChange}
                   required
                   placeholder="Please describe your symptoms or reason for booking"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
                 />
               </div>
 
@@ -689,7 +689,7 @@ const LandingPage = () => {
               </button>
 
               {!isAuthenticated && (
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                   You will be redirected to login if you're not signed in.
                 </p>
               )}

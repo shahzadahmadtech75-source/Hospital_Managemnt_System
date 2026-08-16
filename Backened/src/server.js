@@ -1,12 +1,20 @@
 import dotenv from 'dotenv';
 import app from './app.js';
 import connectDB from './config/db.js';
+import http from 'http';
+import { initializeSocket } from './socket/index.js';
 
 // Load environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
 /**
  * Start the server after establishing database connection
  */

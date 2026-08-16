@@ -1,15 +1,27 @@
 import Department from "../models/department.model.js";
 import DoctorProfile from "../models/doctorProfile.model.js";
 
-// Get all departments (public)
 export const getPublicDepartments = async (req, res) => {
   try {
     const departments = await Department.find().sort({ name: 1 });
 
+    // Count doctors for each department by department name
+    const departmentsWithCount = await Promise.all(
+      departments.map(async (dept) => {
+        const doctorCount = await DoctorProfile.countDocuments({ 
+          department: dept.name 
+        });
+        return {
+          ...dept.toObject(),
+          doctors: doctorCount,  // Add doctor count as a number
+        };
+      })
+    );
+
     res.status(200).json({
       success: true,
-      count: departments.length,
-      data: departments,
+      count: departmentsWithCount.length,
+      data: departmentsWithCount,
     });
   } catch (error) {
     console.error('Error fetching public departments:', error);

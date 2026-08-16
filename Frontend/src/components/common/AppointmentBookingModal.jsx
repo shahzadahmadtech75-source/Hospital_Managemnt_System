@@ -104,13 +104,13 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-gray-700">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Book Appointment</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Book Appointment</h2>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -120,23 +120,23 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
         <div className="p-6">
           {/* Authentication Warning */}
           {!isAuthenticated && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
-              <ExclamationCircleIcon className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg flex items-start gap-3">
+              <ExclamationCircleIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">Login Required</p>
-                <p className="text-sm text-yellow-700">
-                  Please <a href="/login" className="font-semibold underline hover:text-yellow-900">login</a> as a patient to book an appointment.
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Login Required</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                  Please <a href="/login" className="font-semibold underline hover:text-yellow-900 dark:hover:text-yellow-400">login</a> as a patient to book an appointment.
                 </p>
               </div>
             </div>
           )}
 
           {isAuthenticated && !isPatient && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg flex items-start gap-3">
+              <ExclamationCircleIcon className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">Patient Access Only</p>
-                <p className="text-sm text-red-700">
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">Patient Access Only</p>
+                <p className="text-sm text-red-700 dark:text-red-200">
                   Only patients can book appointments. Please login with a patient account.
                 </p>
               </div>
@@ -147,12 +147,12 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Select Doctor */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Select Doctor *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <UserIcon className="h-5 w-5 text-gray-400" />
+                  <UserIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <select
                   name="doctorId"
@@ -160,7 +160,7 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
                   onChange={handleChange}
                   required
                   disabled={!isPatient || submitting}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:dark:bg-gray-700 disabled:cursor-not-allowed"
                 >
                   <option value="">Select a doctor</option>
                   {doctors.map((doctor) => (
@@ -174,12 +174,12 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
 
             {/* Appointment Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Appointment Date *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <CalendarIcon className="h-5 w-5 text-gray-400" />
+                  <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="date"
@@ -189,19 +189,19 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
                   required
                   min={new Date().toISOString().split('T')[0]}
                   disabled={!isPatient || submitting}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:dark:bg-gray-700 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             {/* Appointment Time */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Appointment Time *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <ClockIcon className="h-5 w-5 text-gray-400" />
+                  <ClockIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <select
                   name="appointmentTime"
@@ -209,7 +209,7 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
                   onChange={handleChange}
                   required
                   disabled={!isPatient || submitting}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:dark:bg-gray-700 disabled:cursor-not-allowed"
                 >
                   <option value="">Select time</option>
                   {['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30','16:00'].map((t) => (
@@ -221,12 +221,12 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
 
             {/* Reason */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Reason for Visit *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-start pt-2.5 pointer-events-none">
-                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <textarea
                   name="reason"
@@ -235,7 +235,7 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
                   required
                   rows="3"
                   disabled={!isPatient || submitting}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:dark:bg-gray-700 disabled:cursor-not-allowed resize-none"
                   placeholder="Briefly describe your symptoms or reason for booking"
                 />
               </div>
@@ -248,7 +248,7 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
               className={`w-full py-3 font-medium rounded-md transition-colors ${
                 isPatient
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }`}
             >
               {submitting ? 'Booking...' : 'Book Appointment'}
@@ -256,13 +256,13 @@ const AppointmentBookingModal = ({ isOpen, onClose }) => {
 
             {/* Helper Text */}
             {!isPatient && isAuthenticated && (
-              <p className="text-sm text-center text-gray-500">
+              <p className="text-sm text-center text-gray-500 dark:text-gray-400">
                 You need a patient account to book appointments.
               </p>
             )}
             {!isAuthenticated && (
-              <p className="text-sm text-center text-gray-500">
-                <a href="/login" className="text-blue-600 hover:underline">Login</a> to book an appointment.
+              <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+                <a href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Login</a> to book an appointment.
               </p>
             )}
           </form>

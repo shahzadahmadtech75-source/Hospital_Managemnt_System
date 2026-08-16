@@ -9,6 +9,7 @@ import InvoicesTab from '../../components/accountantTabs/InvoicesTab';
 import PatientsTab from '../../components/accountantTabs/PatientsTab';
 import DoctorsTab from '../../components/accountantTabs/DoctorsTab';
 import ProfileTab from '../../components/accountantTabs/ProfileTab';
+import MessagesPage from '../messages/MessagesPage';
 
 // Icons
 import {
@@ -17,6 +18,7 @@ import {
   UserGroupIcon,
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
+  ChatBubbleLeftIcon,
   Bars3Icon,
   XMarkIcon,
   ChevronLeftIcon,
@@ -41,6 +43,7 @@ const AccountantDashboard = () => {
     { id: 'invoices', label: 'Invoices', icon: DocumentTextIcon },
     { id: 'patients', label: 'Patients', icon: UserGroupIcon },
     { id: 'doctors', label: 'Doctors', icon: UserCircleIcon },
+    { id: 'messages', label: 'Messages', icon: ChatBubbleLeftIcon },
     { id: 'profile', label: 'Profile', icon: CurrencyDollarIcon },
   ];
 
@@ -100,6 +103,8 @@ const AccountantDashboard = () => {
         return <PatientsTab />;
       case 'doctors':
         return <DoctorsTab />;
+      case 'messages':
+        return <MessagesPage />;
       case 'profile':
         return <ProfileTab setIsProfileComplete={setIsProfileComplete} />;
       default:

@@ -12,7 +12,7 @@ import MonitorTab from '../../components/adminTabs/MonitorTab';
 import NoticesTab from '../../components/adminTabs/NoticesTab';
 import ProfileTab from '../../components/adminTabs/ProfileTab';
 import EmergencyTab from '../../components/adminTabs/EmergencyTab';
-
+import MessagesPage from '../messages/MessagesPage';
 // Icons
 import {
   HomeIcon,
@@ -24,6 +24,7 @@ import {
   MegaphoneIcon,
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
+  ChatBubbleLeftIcon,
   Bars3Icon,
   XMarkIcon,
   ChevronLeftIcon,
@@ -50,6 +51,7 @@ const AdminDashboard = () => {
     { id: 'monitor', label: 'Monitor', icon: EyeIcon },
     { id: 'notices', label: 'Notices', icon: MegaphoneIcon },
     { id: 'profile', label: 'Profile', icon: UserCircleIcon },
+    { id: 'messages', label: 'Messages', icon: ChatBubbleLeftIcon },
     { id: 'emergency', label: 'Emergency', icon: ExclamationTriangleIcon }, 
   ];
 
@@ -110,6 +112,8 @@ const AdminDashboard = () => {
         return <NoticesTab />;
         case 'emergency':
   return <EmergencyTab />;
+  case 'messages':
+  return <MessagesPage />;
 
       case 'profile':
         return <ProfileTab setIsProfileComplete={setIsProfileComplete} />;
@@ -174,7 +178,8 @@ const AdminDashboard = () => {
       <aside
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen
-          bg-white border-r border-gray-200
+          bg-white
+           border-r-4 border-blue-700 rounded-r-xl
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'w-72' : 'w-20'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -185,17 +190,18 @@ const AdminDashboard = () => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
           {isSidebarOpen ? (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 ">
               <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
                 <img className='w-full h-full object-cover' src="https://tse1.mm.bing.net/th/id/OIP.XDpsKD3Omlj227bBS54s6wHaHa?r=0&pid=Api&h=220&P=0" alt="" />
               </div>
               <span className="text-lg font-semibold text-gray-800">Admin</span>
             </div>
           ) : (
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">H</span>
+            <div className="w-12 h-12 bg-blue-600 rounded flex items-center justify-center">
+              <img className='w-full h-full object-cover' src="https://tse1.mm.bing.net/th/id/OIP.XDpsKD3Omlj227bBS54s6wHaHa?r=0&pid=Api&h=220&P=0" alt="" />
             </div>
           )}
+          
           <button
             onClick={toggleSidebar}
             className="hidden lg:flex p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"

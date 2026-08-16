@@ -10,6 +10,7 @@ import BedsTab from '../../components/nurseTabs/BedsTab';
 import AdmissionsTab from '../../components/nurseTabs/AdmissionsTab';
 import ReportsTab from '../../components/nurseTabs/ReportsTab';
 import ProfileTab from '../../components/nurseTabs/ProfileTab';
+import MessagesPage from '../messages/MessagesPage';
 
 // Icons
 import {
@@ -21,6 +22,7 @@ import {
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
   Bars3Icon,
+  ChatBubbleLeftIcon,
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -44,6 +46,7 @@ const NurseDashboard = () => {
     { id: 'beds', label: 'Beds', icon: BuildingOfficeIcon },
     { id: 'admissions', label: 'Admissions', icon: ClipboardDocumentListIcon },
     { id: 'reports', label: 'Reports', icon: DocumentTextIcon },
+    { id: 'messages', label: 'Messages', icon: ChatBubbleLeftIcon },
     { id: 'profile', label: 'Profile', icon: UserCircleIcon },
   ];
 
@@ -106,6 +109,8 @@ const NurseDashboard = () => {
         return <AdmissionsTab />;
       case 'reports':
         return <ReportsTab />;
+        case 'messages':
+  return <MessagesPage />;
       case 'profile':
         return <ProfileTab setIsProfileComplete={setIsProfileComplete} />;
       default:
@@ -173,7 +178,7 @@ const NurseDashboard = () => {
       <aside
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen
-          bg-white border-r border-gray-200
+          bg-white border-r-4 border-blue-700 rounded-xl
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'w-72' : 'w-20'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}

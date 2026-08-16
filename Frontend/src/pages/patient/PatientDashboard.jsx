@@ -11,10 +11,12 @@ import AdmissionsTab from '../../components/patientTabs/AdmissionsTab';
 import OperationsTab from '../../components/patientTabs/OperationsTab';
 import InvoicesTab from '../../components/patientTabs/InvoicesTab';
 import UpdateProfileTab from '../../components/patientTabs/UpdateProfileTab';
+import MessagesPage from '../messages/MessagesPage';
 
 // Icons (using Heroicons - replace with Lucide if preferred)
 import {
   CalendarIcon,
+  ChatBubbleLeftIcon,
   UserGroupIcon,
   DocumentTextIcon,
   BuildingOfficeIcon,
@@ -48,6 +50,7 @@ const PatientDashboard = () => {
     { id: 'admissions', label: 'Admissions', icon: BuildingOfficeIcon },
     { id: 'operations', label: 'Operations', icon: BeakerIcon },
     { id: 'invoices', label: 'Invoices', icon: CurrencyDollarIcon },
+    { id: 'messages', label: 'Messages', icon: ChatBubbleLeftIcon },
     { id: 'update-profile', label: 'Update Profile', icon: UserCircleIcon },
   ];
 
@@ -117,6 +120,8 @@ const PatientDashboard = () => {
         return <OperationsTab />;
       case 'invoices':
         return <InvoicesTab />;
+        case 'messages':
+  return <MessagesPage />;
       case 'update-profile':
         return <UpdateProfileTab setIsProfileComplete={setIsProfileComplete} />;
       default:
@@ -184,7 +189,7 @@ const PatientDashboard = () => {
       <aside
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen
-          bg-white border-r border-gray-200
+          bg-white border-r-4 border-blue-700 rounded-xl
           transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'w-72' : 'w-20'}
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}

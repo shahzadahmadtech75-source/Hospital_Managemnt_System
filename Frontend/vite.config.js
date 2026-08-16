@@ -15,4 +15,11 @@ export default defineConfig({
       },
     },
   },
+  css: {
+    preprocessorOptions: {
+      css: {
+        additionalData: `@import "tailwindcss";`
+      }
+    }
+  }
 })
