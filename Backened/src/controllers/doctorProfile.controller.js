@@ -1074,6 +1074,7 @@ export const getMyPatients = async (req, res) => {
           
           patientMap.set(patientId, {
             id: patientData._id,
+            userId: patientData.user?._id,
             // ✅ Check both places for fullName
             fullName: patientData.fullName || userData.fullName || 'Unknown',
             phone: patientData.phone || userData.phone || '',

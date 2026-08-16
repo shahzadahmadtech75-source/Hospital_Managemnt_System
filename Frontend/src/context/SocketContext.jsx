@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-
+import axiosInstance from '../api/axiosInstance';
 
 const SocketContext = createContext(null);
 
@@ -14,10 +14,47 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef(null);
+
+  // Function to get valid token
+  const getValidToken = async () => {
+    let token = localStorage.getItem('hms_access_token');
+    
+    // Check if token is expired by decoding it
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        const now = Date.now();
+        
+        // If token expires in less than 30 seconds, refresh it
+        if (exp - now < 30000) {
+          console.log('🔄 Token expiring soon, refreshing...');
+          try {
+            const response = await axiosInstance.post('/auth/refresh', {}, { withCredentials: true });
+            if (response.data.success) {
+              const newToken = response.data.data.accessToken;
+              localStorage.setItem('hms_access_token', newToken);
+              token = newToken;
+              console.log('✅ Token refreshed successfully');
+            }
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            logout();
+            return null;
+          }
+        }
+      } catch (e) {
+        console.error('❌ Token decode error:', e);
+        logout();
+        return null;
+      }
+    }
+    return token;
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -30,34 +67,64 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const token = localStorage.getItem('hms_access_token');
-    if (!token) return;
+    const connectSocket = async () => {
+      const token = await getValidToken();
+      if (!token) return;
 
-    const socketInstance = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000', {
-      auth: { token },
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+      const serverUrl = import.meta.env.SOCKET_API_BASE_URL || 'http://localhost:5000';
+      console.log('🔌 Connecting to Socket.IO server:', serverUrl);
 
-    socketRef.current = socketInstance;
-    setSocket(socketInstance);
+      const socketInstance = io(serverUrl, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      });
 
-    socketInstance.on('connect', () => {
-      console.log('Socket connected');
-      setIsConnected(true);
-    });
+      socketRef.current = socketInstance;
+      setSocket(socketInstance);
 
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-    });
+      socketInstance.on('connect', () => {
+        console.log('✅ Socket connected! ID:', socketInstance.id);
+        setIsConnected(true);
+      });
 
-    socketInstance.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
-      setIsConnected(false);
-    });
+      socketInstance.on('disconnect', () => {
+        console.log('❌ Socket disconnected');
+        setIsConnected(false);
+      });
+
+      socketInstance.on('connect_error', async (error) => {
+        console.error('❌ Socket connection error:', error.message);
+        
+        // If token expired, try to refresh and reconnect
+        if (error.message === 'Token expired' || error.message === 'Authentication failed') {
+          console.log('🔄 Token expired, attempting refresh...');
+          try {
+            const newToken = await getValidToken();
+            if (newToken) {
+              console.log('✅ Token refreshed, reconnecting...');
+              socketInstance.auth = { token: newToken };
+              socketInstance.connect();
+            } else {
+              logout();
+            }
+          } catch (refreshError) {
+            console.error('❌ Refresh failed:', refreshError);
+            logout();
+          }
+        }
+        setIsConnected(false);
+      });
+
+      socketInstance.on('reconnect', () => {
+        console.log('✅ Socket reconnected');
+        setIsConnected(true);
+      });
+    };
+
+    connectSocket();
 
     return () => {
       if (socketRef.current) {

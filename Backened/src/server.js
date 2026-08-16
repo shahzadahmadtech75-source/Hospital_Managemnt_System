@@ -9,12 +9,12 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
-
-// Create HTTP server
+// ✅ Create HTTP server ONCE
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// ✅ Initialize Socket.IO on the SAME server
 const io = initializeSocket(server);
+
 /**
  * Start the server after establishing database connection
  */
@@ -23,10 +23,11 @@ const startServer = async () => {
     // Connect to MongoDB before starting the server
     await connectDB();
     
-    // Store the server instance in a variable
-    const server = app.listen(PORT, () => {
+    // ✅ Start the SAME server (not app.listen)
+    server.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🔌 Socket.IO: ws://localhost:${PORT}`);
     });
 
     // Setup graceful shutdown handlers

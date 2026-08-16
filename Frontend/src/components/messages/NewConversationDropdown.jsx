@@ -80,13 +80,14 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
             }));
             break;
           case 'doctor':
-            formattedUsers = data.map(u => ({
-              _id: u.id || u._id,
-              name: u.fullName || u.name || 'Unknown',
-              email: u.email,
-              role: 'patient',
-              profileImage: u.profileImage,
-            }));
+  formattedUsers = data.map(u => ({
+    _id: u.userId,
+    profileId: u.profileId,
+    name: u.fullName || u.name || 'Unknown',
+    email: u.email,
+    role: 'patient',
+    profileImage: u.profileImage,
+  }))
             break;
           case 'nurse':
             formattedUsers = data.map(u => ({
@@ -107,13 +108,14 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
             }));
             break;
           case 'receptionist':
-            formattedUsers = data.map(u => ({
-              _id: u._id || u.userId,
-              name: u.fullName || 'Unknown',
-              email: u.email,
-              role: 'patient',
-              profileImage: u.profileImage,
-            }));
+  formattedUsers = data.map(u => ({
+    _id: u.userId,
+    profileId: u._id,
+    name: u.fullName || 'Unknown',
+    email: u.email,
+    role: 'patient',
+    profileImage: u.profileImage,
+  }));
             break;
           case 'accountant':
             formattedUsers = data.map(u => ({
@@ -150,6 +152,8 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
   // Create conversation with selected user
   const handleSelectUser = async (selectedUser) => {
     try {
+       console.log('🔍 Selected user:', selectedUser);  // ✅ Add this
+  console.log('🔍 otherUserId:', selectedUser._id); // ✅ Add this
       const response = await axiosInstance.post('/messages/conversations', {
         otherUserId: selectedUser._id,
       });
@@ -261,10 +265,11 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
             ) : (
               filteredUsers.map((u) => (
                 <button
-                  key={u._id}
-                  onClick={() => handleSelectUser(u)}
-                  className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
+                key={u._id}
+                onClick={() => handleSelectUser(u)}
+                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left"
                 >
+                  {console.log(u)}
                   {/* Avatar */}
                   <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {u.profileImage ? (

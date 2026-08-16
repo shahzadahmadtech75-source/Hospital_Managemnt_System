@@ -34,7 +34,6 @@ const conversationSchema = new mongoose.Schema({
 });
 
 // Indexes
-conversationSchema.index({ participants: 1 }, { unique: true });
 conversationSchema.index({ participants: 1, lastMessageTimestamp: -1 });
 conversationSchema.index({ type: 1 });
 conversationSchema.index({ lastMessageTimestamp: -1 });

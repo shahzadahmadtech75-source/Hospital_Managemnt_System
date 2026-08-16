@@ -1,5 +1,4 @@
 // socket/authentication.js
-
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 
@@ -12,11 +11,24 @@ export const authenticateSocket = async (socket, next) => {
     }
     
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    console.log('🔑 Decoded token:', decoded);
+
+    // ✅ FIX: Your token uses 'userId' (not 'id')
+    const userId = decoded.userId;  // ← Changed from decoded.id
     
-    const user = await User.findById(decoded.id).select('id role');
+    if (!userId) {
+      console.error('❌ No userId in token:', decoded);
+      return next(new Error('Invalid token: No user ID'));
+    }
+
+    const user = await User.findById(userId).select('id role');
+    
     if (!user) {
+      console.error('❌ User not found for ID:', userId);
       return next(new Error('User not found'));
     }
+
+    console.log('✅ Socket authenticated for user:', userId);
     
     socket.user = {
       id: user._id,
@@ -25,6 +37,8 @@ export const authenticateSocket = async (socket, next) => {
     
     next();
   } catch (error) {
+    console.error('Socket authentication error:', error.message);
+    
     if (error.name === 'JsonWebTokenError') {
       return next(new Error('Invalid token'));
     }

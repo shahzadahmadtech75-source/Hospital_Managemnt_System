@@ -108,37 +108,70 @@ const getOtherParticipant = (participants, userId) => {
 // ============================================
 // Helper: Format conversation for response
 // ============================================
+// Helper: Format conversation for response
 const formatConversation = async (conversation, userId) => {
-  const conv = conversation.toObject();
-  
-  // Get other participant
-  const otherParticipant = conv.participants.find(
-    p => p._id.toString() !== userId.toString()
-  );
-  
-  // Calculate unread count
-  const unreadCount = await Message.countDocuments({
-    conversation: conv._id,
-    readBy: { $ne: userId },
-    sender: { $ne: userId },
-  });
+  try {
+    // ✅ Make sure conversation is populated
+    if (!conversation) {
+      throw new Error('Conversation is null or undefined');
+    }
 
-  return {
-    _id: conv._id,
-    type: conv.type,
-    otherParticipant: {
-      _id: otherParticipant?._id,
-      username: otherParticipant?.username,
-      email: otherParticipant?.email,
-      profileImage: otherParticipant?.profileImage || null,
-      role: otherParticipant?.role,
-    },
-    lastMessage: conv.lastMessage,
-    lastMessageTimestamp: conv.lastMessageTimestamp,
-    unreadCount,
-    createdAt: conv.createdAt,
-    updatedAt: conv.updatedAt,
-  };
+    const conv = conversation.toObject ? conversation.toObject() : conversation;
+    
+    // ✅ Ensure participants exist
+    if (!conv.participants || !Array.isArray(conv.participants)) {
+      console.error('❌ No participants found in conversation:', conv);
+      throw new Error('Invalid conversation structure: no participants');
+    }
+
+    // Get other participant
+    const otherParticipant = conv.participants.find(
+      p => p._id.toString() !== userId.toString()
+    );
+
+    if (!otherParticipant) {
+      console.error('❌ Other participant not found for userId:', userId);
+      console.error('Participants:', conv.participants);
+      throw new Error('Other participant not found');
+    }
+
+    // Calculate unread count
+    let unreadCount = 0;
+    try {
+      unreadCount = await Message.countDocuments({
+        conversation: conv._id,
+        readBy: { $ne: userId },
+        sender: { $ne: userId },
+      });
+    } catch (err) {
+      console.error('Error counting unread:', err);
+      unreadCount = 0;
+    }
+
+    return {
+      _id: conv._id,
+      type: conv.type || 'patient-doctor',
+      otherParticipant: {
+        _id: otherParticipant._id,
+        username: otherParticipant.username || 'Unknown',
+        email: otherParticipant.email || null,
+        profileImage: otherParticipant.profileImage || null,
+        role: otherParticipant.role || 'user',
+      },
+      lastMessage: conv.lastMessage || {
+        content: '',
+        sender: null,
+        timestamp: new Date(),
+      },
+      lastMessageTimestamp: conv.lastMessageTimestamp || conv.lastMessage?.timestamp || new Date(),
+      unreadCount: unreadCount || 0,
+      createdAt: conv.createdAt || new Date(),
+      updatedAt: conv.updatedAt || new Date(),
+    };
+  } catch (error) {
+    console.error('❌ Error formatting conversation:', error);
+    throw error;
+  }
 };
 
 // ============================================
@@ -184,6 +217,7 @@ export const getMyConversations = async (req, res) => {
 export const getOrCreateConversation = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log(userId)
     const { otherUserId } = req.body;
 
     if (!otherUserId) {
