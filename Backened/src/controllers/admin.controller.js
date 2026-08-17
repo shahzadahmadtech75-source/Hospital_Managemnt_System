@@ -20,7 +20,7 @@ import Notice from '../models/notice.model.js';
  */
 export const createAdmin = async (req, res,next) => {
   try {
-    const { email, password, secretKey } = req.body;
+    const { email, password,username ,secretKey } = req.body;
 
     // Only allow in development
     if (process.env.NODE_ENV === 'production') {
@@ -72,6 +72,7 @@ export const createAdmin = async (req, res,next) => {
     // Create admin user
     const user = await User.create({
       email: email.toLowerCase(),
+      username,
       password,
       role: 'admin',
       isActive: true,
