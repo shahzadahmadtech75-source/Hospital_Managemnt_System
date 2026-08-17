@@ -6,7 +6,7 @@ import Message from '../../models/message.model.js';
 export const handleSendMessage = (socket, io) => {
   return async (data) => {
     try {
-      const { conversationId, content } = data;
+      const { conversationId, content, tempId } = data; // ✅ accept tempId from client
       const userId = socket.user.id;
       
       if (!conversationId || !content) {
@@ -64,7 +64,11 @@ export const handleSendMessage = (socket, io) => {
         updatedAt: message.updatedAt,
       };
       
-      io.to(`conversation:${conversationId}`).emit('newMessage', messageData);
+      // Emit to everyone in the conversation room EXCEPT the sender
+      socket.to(`conversation:${conversationId}`).emit('newMessage', messageData);
+      
+      // ✅ Echo tempId back so the sender can reconcile their optimistic bubble
+      socket.emit('messageSent', { ...messageData, tempId });
       
     } catch (error) {
       console.error('Send message error:', error);

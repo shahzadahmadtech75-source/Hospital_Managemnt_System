@@ -71,7 +71,20 @@ const isMessagingAllowed = async (user1Id, user1Role, user2Id, user2Role) => {
     return false;
   }
 
-  // Patient ↔ Doctor (with appointment validation)
+  // ✅ Staff (Doctor, Nurse, Receptionist, Accountant) ↔ Patient
+  const staffRoles = ['doctor', 'nurse', 'receptionist', 'accountant'];
+  
+  // Staff → Patient
+  if (staffRoles.includes(user1Role) && user2Role === 'patient') {
+    return true;
+  }
+  
+  // Patient → Staff
+  if (user1Role === 'patient' && staffRoles.includes(user2Role)) {
+    return true;
+  }
+
+  // Patient ↔ Doctor (with appointment validation - stricter)
   if (user1Role === 'patient' && user2Role === 'doctor') {
     return await hasAppointmentWithDoctor(user1Id, user2Id);
   }
@@ -80,11 +93,7 @@ const isMessagingAllowed = async (user1Id, user1Role, user2Id, user2Role) => {
     return await hasAppointmentWithDoctor(user2Id, user1Id);
   }
 
-  // Doctor ↔ Patient (already covered above)
-  if (user1Role === 'doctor' && user2Role === 'patient') {
-    return await hasAppointmentWithDoctor(user2Id, user1Id);
-  }
-
+  // ❌ All other combinations are NOT allowed
   return false;
 };
 
