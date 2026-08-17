@@ -3,6 +3,7 @@ import { toast } from '../common/Toaster';
 import axiosInstance from '../../api/axiosInstance';
 import {
   BuildingOfficeIcon,
+  BuildingOffice2Icon,
   UserIcon,
   CalendarIcon,
   ClockIcon,
@@ -79,7 +80,7 @@ const AdmissionsTab = () => {
     const statusConfig = {
       admitted: {
         color: 'bg-blue-100 text-blue-800 border-blue-200',
-        icon: <span className="text-sm">🏥</span>,
+        icon: BuildingOffice2Icon, // ✅ was <span>🏥</span> — a rendered element, not a component; crashed when used as <Icon />
         label: 'Admitted',
       },
       discharged: {
@@ -206,13 +207,13 @@ const AdmissionsTab = () => {
                       )}
                       {admission.bedNumber && (
                         <span className="flex items-center">
-                          < RectangleStackIcon className="w-4 h-4 mr-1" />
+                          <RectangleStackIcon className="w-4 h-4 mr-1" />
                           Bed: {admission.bedNumber}
                         </span>
                       )}
                       {admission.bedType && (
                         <span className="flex items-center">
-                          <HospitalIcon className="w-4 h-4 mr-1" />
+                          <BuildingOffice2Icon className="w-4 h-4 mr-1" />
                           {getBedTypeLabel(admission.bedType)}
                         </span>
                       )}

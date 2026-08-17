@@ -295,6 +295,7 @@ const AppointmentsTab = () => {
           <div className="space-y-4">
             {appointments.map((appointment) => {
               const doctor = appointment.doctor || {};
+              
               const patient = appointment.patient || {};
 
               return (

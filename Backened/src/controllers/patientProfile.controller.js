@@ -449,7 +449,7 @@ export const getPatientDoctors = async (req, res) => {
     // Find all appointments for this patient (excluding rejected)
     const appointments = await Appointment.find({
       patient: patientProfile._id,
-      status: { $ne: 'rejected' } // Exclude rejected appointments
+      status: { $ne: 'rejected' }
     }).select('doctor');
 
     if (appointments.length === 0) {
@@ -463,17 +463,19 @@ export const getPatientDoctors = async (req, res) => {
     // Extract unique doctor IDs from appointments
     const doctorIds = [...new Set(appointments.map(app => app.doctor.toString()))];
 
-    // Find all unique doctors
+    // Find all unique doctors with user population
     const doctors = await DoctorProfile.find({
       _id: { $in: doctorIds }
     })
-    .populate('user', 'profileImage') // Get profileImage from User
-    .select('fullName department specialization qualification description');
+    .populate('user', 'profileImage email username') // ✅ Added email and username
 
-    // Format response
+    // Format response with user data
     const formattedDoctors = doctors.map(doctor => ({
       _id: doctor._id,
+      userId: doctor.user?._id || null,           // ✅ Added user ID
       fullName: doctor.fullName,
+      email: doctor.user?.email || null,           // ✅ Added email
+      username: doctor.user?.username || null,     // ✅ Added username
       profileImage: doctor.user?.profileImage || null,
       department: doctor.department,
       specialization: doctor.specialization,

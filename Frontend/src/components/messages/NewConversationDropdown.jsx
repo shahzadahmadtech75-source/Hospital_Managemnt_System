@@ -94,16 +94,16 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
             break;
           case 'nurse':
             formattedUsers = data.map(u => ({
-              _id: u._id || u.user?._id,
+              _id: u.userId,
               name: u.fullName || u.user?.username || 'Unknown',
-              email: u.user?.email,
+              email: u.email,
               role: 'patient',
               profileImage: u.profileImage || u.user?.profileImage,
             }));
             break;
           case 'patient':
             formattedUsers = data.map(u => ({
-              _id: u._id,
+              _id: u.userId,
               name: u.fullName || 'Unknown',
               email: u.email,
               role: 'doctor',
@@ -122,7 +122,7 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
             break;
           case 'accountant':
             formattedUsers = data.map(u => ({
-              _id: u._id,
+              _id: u.userId,
               name: u.fullName || 'Unknown',
               email: u.email,
               role: 'patient',

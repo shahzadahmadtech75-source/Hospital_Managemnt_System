@@ -247,6 +247,7 @@ export const getPatients = async (req, res) => {
 
     const formattedPatients = patients.map(patient => ({
       _id: patient._id,
+      userId:patient.user?.id || null,
       fullName: patient.fullName,
       phone: patient.phone,
       email: patient.user?.email || null,

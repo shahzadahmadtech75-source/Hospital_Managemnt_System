@@ -3,6 +3,7 @@ import { toast } from '../../components/common/Toaster';
 import axiosInstance from '../../api/axiosInstance';
 import {
   BuildingOfficeIcon,
+  BuildingOffice2Icon,
   UserIcon,
   CalendarIcon,
   EyeIcon,
@@ -185,7 +186,7 @@ const AdmissionsTab = () => {
     const statusConfig = {
       admitted: {
         color: 'bg-blue-100 text-blue-800 border-blue-200',
-        icon: HospitalIcon,
+        icon: BuildingOffice2Icon, // ✅ was HospitalIcon (undefined) — this crashed on every admitted record
         label: 'Admitted',
       },
       discharged: {

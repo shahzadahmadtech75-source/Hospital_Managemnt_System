@@ -15,7 +15,7 @@ export const getAllPatients = async (req, res) => {
     const patients = await PatientProfile.find()
       .populate({
         path: 'user',
-        select: 'email username profileImage -_id',
+        select: 'email username profileImage', // ✅ Removed -_id to get user._id
       })
       .sort({ createdAt: -1 });
 
@@ -24,6 +24,7 @@ export const getAllPatients = async (req, res) => {
       const patientObj = patient.toObject();
       return {
         _id: patientObj._id,
+        userId: patientObj.user?._id || null,  // ✅ Fixed: patientObj.user?._id
         fullName: patientObj.fullName,
         email: patientObj.user?.email || null,
         username: patientObj.user?.username || null,
