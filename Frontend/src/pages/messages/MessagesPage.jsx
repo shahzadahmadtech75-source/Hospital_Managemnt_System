@@ -56,32 +56,29 @@ const MessagesPage = () => {
   }, []);
 
   // Socket event listeners
-  useEffect(() => {
-    if (!socket) return;
+ // In the socket event listeners useEffect, add this alongside the existing ones:
+useEffect(() => {
+  if (!socket) return;
 
-    // New message
-    socket.on('newMessage', handleNewMessage);
+  socket.on('newMessage', handleNewMessage);
+  socket.on('messageSent', handleMessageSent); // ✅ NEW — reconciles the sender's own temp bubble
 
-    // Typing
-    socket.on('userTyping', handleUserTyping);
-    socket.on('userStoppedTyping', handleUserStoppedTyping);
+  socket.on('userTyping', handleUserTyping);
+  socket.on('userStoppedTyping', handleUserStoppedTyping);
+  socket.on('messageRead', handleMessageRead);
+  socket.on('userOnline', handleUserOnline);
+  socket.on('userOffline', handleUserOffline);
 
-    // Read receipt
-    socket.on('messageRead', handleMessageRead);
-
-    // Online status
-    socket.on('userOnline', handleUserOnline);
-    socket.on('userOffline', handleUserOffline);
-
-    return () => {
-      socket.off('newMessage');
-      socket.off('userTyping');
-      socket.off('userStoppedTyping');
-      socket.off('messageRead');
-      socket.off('userOnline');
-      socket.off('userOffline');
-    };
-  }, [socket]);
+  return () => {
+    socket.off('newMessage');
+    socket.off('messageSent'); // ✅ NEW
+    socket.off('userTyping');
+    socket.off('userStoppedTyping');
+    socket.off('messageRead');
+    socket.off('userOnline');
+    socket.off('userOffline');
+  };
+}, [socket]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -157,18 +154,56 @@ const MessagesPage = () => {
     }
   };
 
+  // New handler — same reconciliation logic I wrote for handleNewMessage,
+// but this is the one that actually fires for the sender's own message.
+const handleMessageSent = useCallback((data) => {
+  setMessages(prev => {
+    if (data.tempId) {
+      const tempIndex = prev.findIndex((m) => m._id === data.tempId);
+      if (tempIndex !== -1) {
+        const updated = [...prev];
+        updated[tempIndex] = data; // real message replaces the temp one — __isTemp gone
+        return updated;
+      }
+    }
+    const alreadyExists = prev.some((m) => m._id === data._id);
+    if (alreadyExists) return prev;
+    return [...prev, data];
+  });
+
+  // Keep the sender's own conversation list in sync too
+  setConversations(prev =>
+    prev.map(c =>
+      c._id === data.conversation
+        ? {
+            ...c,
+            lastMessage: {
+              content: data.content,
+              sender: data.sender?._id,
+              timestamp: data.createdAt,
+            },
+            lastMessageTimestamp: data.createdAt,
+          }
+        : c
+    )
+  );
+}, []);
   // Send message
+  // ✅ FIX: generate a tempId, send it to the server, and stamp the optimistic
+  // message with it so the confirmed message can find and replace it later.
   const sendMessage = async (content) => {
     if (!activeConversation || !content.trim() || !socket) return;
     setSending(true);
     try {
+      const tempId = `temp-${Date.now()}`;
       socket.emit('sendMessage', {
         conversationId: activeConversation._id,
         content: content.trim(),
+        tempId, // server must echo this back on the broadcasted 'newMessage' event
       });
       // Optimistically add message
       const tempMessage = {
-        _id: `temp-${Date.now()}`,
+        _id: tempId,
         conversation: activeConversation._id,
         sender: { _id: user.id, username: user.username, profileImage: user.profileImage },
         content: content.trim(),
@@ -202,9 +237,27 @@ const MessagesPage = () => {
   };
 
   // Handle new message from socket
+  // ✅ FIX: reconcile against tempId (via the setMessages updater, not stale
+  // closure state) instead of comparing IDs that never matched.
   const handleNewMessage = useCallback((data) => {
-    // Update messages
-    setMessages(prev => [...prev, data]);
+    setMessages(prev => {
+      // If this confirms one of OUR optimistic messages, swap it in place
+      if (data.tempId) {
+        const tempIndex = prev.findIndex((m) => m._id === data.tempId);
+        if (tempIndex !== -1) {
+          const updated = [...prev];
+          updated[tempIndex] = data; // real message replaces the temp one — __isTemp gone
+          return updated;
+        }
+      }
+      // Otherwise, only skip if we truly already have this real message
+      const alreadyExists = prev.some((m) => m._id === data._id);
+      if (alreadyExists) {
+        console.log('⏭️ Skipping duplicate message:', data._id);
+        return prev;
+      }
+      return [...prev, data];
+    });
 
     // Update conversation list
     setConversations(prev =>
@@ -304,6 +357,9 @@ const MessagesPage = () => {
   const selectConversation = (conversation) => {
     setActiveConversation(conversation);
     fetchMessages(conversation._id);
+    if (socket) {
+    socket.emit('joinConversation', { conversationId: conversation._id });
+  }
     if (isMobileView) {
       setShowConversationList(false);
     }

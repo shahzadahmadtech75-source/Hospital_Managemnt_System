@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from '../common/Toaster';
 import axiosInstance from '../../api/axiosInstance';
+import { useSocket } from '../../context/SocketContext';
+
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -18,6 +20,7 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const dropdownRef = useRef(null);
+  const { socket } = useSocket();
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -165,6 +168,10 @@ const NewConversationDropdown = ({ onConversationCreated }) => {
         setSearchTerm('');
         if (onConversationCreated) {
           onConversationCreated(response.data.data);
+          
+          if (socket) {
+            socket.emit('joinConversation', { conversationId: conversation._id });
+          }
         }
       }
     } catch (error) {

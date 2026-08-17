@@ -12,7 +12,7 @@ const ConversationList = ({ conversations, activeId, onSelect, onlineUsers }) =>
   });
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col border-r-4 border-y-2 border-y-blue-600 border-green-600 rounded-xl">
       {/* Search */}
       <div className="p-3 border-b border-gray-200">
         <div className="relative">
@@ -22,7 +22,7 @@ const ConversationList = ({ conversations, activeId, onSelect, onlineUsers }) =>
             placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
