@@ -31,39 +31,43 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      const response = await axiosInstance.post('/auth/login', { email, password });
+
+
+const login = async (email, password) => {
+  try {
+    const response = await axiosInstance.post('/auth/login', { email, password });
+    
+    if (response.data.success) {
+      const { user, accessToken } = response.data.data;
       
-      if (response.data.success) {
-        const { user, accessToken } = response.data.data;
-        
-        localStorage.setItem('hms_access_token', accessToken);
-        localStorage.setItem('hms_user', JSON.stringify(user));
-        setUser(user);
-        
-        // ✅ Success toast
-        toast.success(`Welcome back, ${user.fullName || user.username}!`);
-         // ✅ Role-based redirect
+      localStorage.setItem('hms_access_token', accessToken);
+      localStorage.setItem('hms_user', JSON.stringify(user));
+      setUser(user);
+      
+      toast.success(`Welcome back, ${user.fullName || user.username}!`);
+      
       let redirectPath = '/login';
       if (user.role === 'patient') redirectPath = '/patient/dashboard';
       else if (user.role === 'doctor') redirectPath = '/doctor/dashboard';
       else if (user.role === 'admin') redirectPath = '/admin/dashboard';
       else if (user.role === 'nurse') redirectPath = '/nurse/dashboard';
+      else if (user.role === 'receptionist') redirectPath = '/receptionist/dashboard';
+      else if (user.role === 'accountant') redirectPath = '/accountant/dashboard';
       
       return { success: true, redirectPath };
-      }
-      return { success: false, error: 'Login failed' };
-    } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Login failed';
-      
-      // ✅ Error toast
-      toast.error(message);
-      
-      return { success: false, error: message };
     }
-  };
-
+    
+    // ✅ This will show the toast
+    const errorMessage = response.data?.message || 'Login failed';
+    toast.error(errorMessage);
+    return { success: false, error: errorMessage };
+    
+  } catch (error) {
+    const message = error.response?.data?.message || error.message || 'Login failed';
+    toast.error(message);
+    return { success: false, error: message };
+  }
+};
   const register = async (userData) => {
     try {
       const formData = new FormData();

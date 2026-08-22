@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { toast } from '../common/Toaster';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon , BellIcon } from '@heroicons/react/24/outline';
 import DarkModeToggle from '../common/DarkModeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+   const { unreadCount, clearNotifications } = useSocket(); // ✅ NEW
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
+
+ // ✅ Handle notification click
+  const handleNotificationClick = () => {
+    setShowNotifications(false);
+    clearNotifications();
+    navigate('/messages');
+  };
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,15 +111,15 @@ const Header = () => {
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-blue-300 flex items-center justify-center">
                     {user?.profileImage ? (
                       <img 
-                        src={user.profileImage} 
+                        src={user.profileImage || user.image} 
                         alt={user.fullName || user.username}
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="text-sm font-medium text-blue-600">
+                      <span className="text-lg font-medium  text-blue-800">
                         {user?.fullName ? user.fullName.charAt(0).toUpperCase() : user?.username?.charAt(0).toUpperCase() || 'U'}
                       </span>
                     )}
@@ -144,7 +155,44 @@ const Header = () => {
   Dashboard
 </Link>
 
+   {/* Notifications Button */}
+      {isAuthenticated && (
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Notifications"
+          >
+            <BellIcon className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
 
+          {/* Notification Dropdown */}
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+              <div className="p-3 border-b border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700">Notifications</h4>
+              </div>
+              <div className="p-2">
+                {unreadCount === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No new notifications</p>
+                ) : (
+                  <button
+                    onClick={handleNotificationClick}
+                    className="w-full text-sm text-blue-600 hover:text-blue-700 py-2 text-center"
+                  >
+                    View {unreadCount} new message{unreadCount > 1 ? 's' : ''}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
 <div className="flex items-center space-x-4">
   <DarkModeToggle />

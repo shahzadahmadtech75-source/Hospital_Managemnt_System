@@ -64,6 +64,25 @@ export const handleSendMessage = (socket, io) => {
         updatedAt: message.updatedAt,
       };
       
+   // ✅ Get other participant
+      const otherParticipant = conversation.participants.find(
+        p => p.toString() !== userId
+      );
+
+      // ✅ Emit notification to other participant
+      if (otherParticipant) {
+        io.to(`user:${otherParticipant}`).emit('newMessageNotification', {
+          conversationId: conversationId,
+          message: messageData,
+          sender: {
+            id: userId,
+            name: messageData.sender?.username || 'Unknown',
+          },
+          timestamp: new Date(),
+        });
+      }
+
+
       // Emit to everyone in the conversation room EXCEPT the sender
       socket.to(`conversation:${conversationId}`).emit('newMessage', messageData);
       

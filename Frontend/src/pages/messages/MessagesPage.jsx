@@ -20,6 +20,7 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 const MessagesPage = () => {
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
+  const { clearNotifications } = useSocket(); // ✅ NEW
 
   // State
   const [conversations, setConversations] = useState([]);
@@ -39,6 +40,13 @@ const MessagesPage = () => {
 
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+ useEffect(() => {
+    // ✅ Clear notifications when Messages tab is opened
+    if (clearNotifications) {
+      clearNotifications();
+    }
+  }, []);
 
   // Check mobile view
   useEffect(() => {

@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import axiosInstance from '../api/axiosInstance';
+import {toast} from '../components/common/Toaster'
+import { eventBus } from '../utils/eventBus';
 
 const SocketContext = createContext(null);
 
@@ -17,6 +19,8 @@ export const SocketProvider = ({ children }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [notifications, setNotifications] = useState([]); // ✅ NEW
+  const [unreadCount, setUnreadCount] = useState(0); // ✅ NEW
   const socketRef = useRef(null);
 
   // Function to get valid token
@@ -66,6 +70,7 @@ export const SocketProvider = ({ children }) => {
       }
       return;
     }
+
 
     const connectSocket = async () => {
       const token = await getValidToken();
@@ -136,9 +141,37 @@ export const SocketProvider = ({ children }) => {
     };
   }, [isAuthenticated, user]);
 
+  useEffect(() => {
+    if (!socket) return;
+socket.on('newMessageNotification', (data) => {
+  console.log('🔔 Notification received:', data);
+  
+  setNotifications(prev => [data, ...prev]);
+  setUnreadCount(prev => prev + 1);
+
+   eventBus.emit('newMessage', {
+      message: data,
+      senderName: data.sender?.name || 'Unknown',
+      content: data.message?.content || '',
+    });
+  });    // ✅ Update unread count in navbar (if you have a badge)
+      // This will be handled by the Messages tab
+    
+
+    return () => {
+      socket.off('newMessageNotification');
+    };
+  }, [socket]);
+
   const value = {
     socket,
-    isConnected,
+     isConnected,
+      notifications,    // ✅ NEW
+    unreadCount,      // ✅ NEW
+    clearNotifications: () => {
+      setNotifications([]);
+      setUnreadCount(0);
+    },
   };
 
   return (
